@@ -3,11 +3,16 @@ mod init;
 mod select;
 
 use clap::{Parser, Subcommand, ValueEnum};
+use std::path::PathBuf;
 use std::process;
 
 #[derive(Parser)]
 #[command(name = "hatoba", about = "SSH ログイン時に作業ディレクトリを対話的に選択する")]
 struct Cli {
+    /// 設定ファイルのパス（省略時はデフォルト位置を使用）
+    #[arg(long, global = true)]
+    config: Option<PathBuf>,
+
     #[command(subcommand)]
     command: Command,
 }
@@ -40,7 +45,7 @@ fn main() {
             };
             cmd_init(name);
         }
-        Command::Select => match cmd_select() {
+        Command::Select => match cmd_select(cli.config) {
             Ok(Some(path)) => println!("{path}"),
             Ok(None) => process::exit(1),
             Err(e) => {
@@ -55,8 +60,8 @@ fn cmd_init(shell: &str) {
     print!("{}", init::generate(shell));
 }
 
-fn cmd_select() -> Result<Option<String>, Box<dyn std::error::Error>> {
-    let config = config::load()?;
+fn cmd_select(config_path: Option<PathBuf>) -> Result<Option<String>, Box<dyn std::error::Error>> {
+    let config = config::load(config_path)?;
 
     if config.dirs.is_empty() {
         return Err("no directories configured in config.toml".into());

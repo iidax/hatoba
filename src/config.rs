@@ -20,8 +20,11 @@ impl Dir {
     }
 }
 
-pub fn load() -> Result<Config, Box<dyn std::error::Error>> {
-    let path = config_path()?;
+pub fn load(config_path: Option<std::path::PathBuf>) -> Result<Config, Box<dyn std::error::Error>> {
+    let path = match config_path {
+        Some(p) => p,
+        None => config_path_default()?,
+    };
     if !path.exists() {
         let dir = path.parent().unwrap().display().to_string();
         return Err(format!(
@@ -32,11 +35,22 @@ pub fn load() -> Result<Config, Box<dyn std::error::Error>> {
         .into());
     }
     let content = std::fs::read_to_string(&path)?;
-    let config: Config = toml::from_str(&content)?;
+    let mut config: Config = toml::from_str(&content)?;
+    expand_paths(&mut config)?;
     Ok(config)
 }
 
-fn config_path() -> Result<PathBuf, Box<dyn std::error::Error>> {
+fn expand_paths(config: &mut Config) -> Result<(), Box<dyn std::error::Error>> {
+    if let Some(default) = &config.default {
+        config.default = Some(shellexpand::full(default)?.into_owned());
+    }
+    for dir in &mut config.dirs {
+        dir.path = shellexpand::full(&dir.path)?.into_owned();
+    }
+    Ok(())
+}
+
+fn config_path_default() -> Result<PathBuf, Box<dyn std::error::Error>> {
     let config_dir = dirs::config_dir().ok_or("cannot determine config directory")?;
     Ok(config_dir.join("hatoba").join("config.toml"))
 }
