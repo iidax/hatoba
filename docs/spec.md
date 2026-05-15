@@ -111,10 +111,10 @@ label = "ssd4"
 
 ```
 src/
-  main.rs    コマンドライン引数の解析とサブコマンドへの振り分け
+  main.rs    clap によるコマンドライン引数の解析とサブコマンドへの振り分け
   config.rs  設定ファイル（TOML）の読み込みと構造体定義
   init.rs    hatoba init が出力するシェルスクリプト文字列の定義
-  select.rs  crossterm を使った TUI メニューの描画とキー操作
+  select.rs  dialoguer を使ったインタラクティブな選択 UI
 ```
 
 ### データの流れ
@@ -130,12 +130,14 @@ dir=$(hatoba select)      ← stdout をキャプチャ
     │
     ├─ config::load()     ~/.config/hatoba/config.toml を読む
     │
-    ├─ dirs.len() == 1    → パスを stdout に出力して終了
-    │
-    └─ dirs.len() >= 2    → TUI メニュー（stderr に描画）
+    └─ select::run()
             │
-            ├─ Enter      → パスを stdout に出力、exit 0
-            └─ Esc / ^C   → exit 1（cd しない）
+            ├─ dirs.len() == 1  → パスを返して終了（メニューなし）
+            │
+            └─ dirs.len() >= 2  → TUI メニュー（stderr に描画）
+                    │
+                    ├─ Enter    → パスを返す、exit 0
+                    └─ Esc / ^C → None を返す、exit 1（cd しない）
     │
     ▼
 cd "${dir}"               ← exit 0 のときだけ実行
@@ -188,16 +190,16 @@ fn display(&self) -> &str {
 }
 ```
 
-### `queue!` / `execute!` ― crossterm のターミナル制御
+### `dialoguer` ― インタラクティブな選択 UI
 
 ```rust
-// queue! はコマンドをバッファに積む（まだ出力しない）
-queue!(stderr, style::Print("hello\r\n"))?;
-
-// execute! はバッファに積んで即フラッシュする
-execute!(stderr, cursor::MoveUp(3), terminal::Clear(ClearType::FromCursorDown))?;
+let selection = Select::new()
+    .with_prompt("hatoba: 作業ディレクトリを選択")
+    .items(&items)       // 表示する選択肢のスライス
+    .default(0)          // 初期カーソル位置
+    .interact_opt()?;    // Ok(Some(index)) or Ok(None) を返す
 ```
 
-Raw モード（`terminal::enable_raw_mode()`）に入ると、  
-Enter キーなしでキー入力を即座に受け取れるようになります。  
-必ず `disable_raw_mode()` で元に戻す必要があります。
+`interact_opt()` はユーザーが Esc / Ctrl+C でキャンセルすると `Ok(None)` を返します。  
+UI の描画・raw モード管理・キー処理はすべて dialoguer が内部で行います。  
+描画先は stderr（`console::Term::stderr()`）なので stdout は選択パスの出力専用のまま保たれます。
