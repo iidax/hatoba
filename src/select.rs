@@ -4,6 +4,11 @@ use crate::config::Config;
 
 pub fn run(config: &Config) -> Result<Option<String>, Box<dyn std::error::Error>> {
     let dirs = &config.dirs;
+
+    if dirs.len() == 1 {
+        return Ok(Some(dirs[0].path.clone()));
+    }
+
     let default_path = config.default.as_deref();
 
     let default_idx = default_path

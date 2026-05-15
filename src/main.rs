@@ -2,33 +2,55 @@ mod config;
 mod init;
 mod select;
 
+use clap::{Parser, Subcommand, ValueEnum};
 use std::process;
 
+#[derive(Parser)]
+#[command(name = "hatoba", about = "SSH ログイン時に作業ディレクトリを対話的に選択する")]
+struct Cli {
+    #[command(subcommand)]
+    command: Command,
+}
+
+#[derive(Subcommand)]
+enum Command {
+    /// シェル統合スニペットを stdout に出力する
+    Init {
+        /// 対象シェル
+        shell: Shell,
+    },
+    /// 作業ディレクトリを対話的に選択して stdout に出力する
+    Select,
+}
+
+#[derive(ValueEnum, Clone)]
+enum Shell {
+    Bash,
+    Zsh,
+}
+
 fn main() {
-    let args: Vec<String> = std::env::args().collect();
+    let cli = Cli::parse();
 
-    let result = match args.get(1).map(String::as_str) {
-        Some("init") => {
-            let shell = args.get(2).map(String::as_str).unwrap_or("");
-            cmd_init(shell)
+    match cli.command {
+        Command::Init { shell } => {
+            let name = match shell {
+                Shell::Bash => "bash",
+                Shell::Zsh => "zsh",
+            };
+            cmd_init(name);
         }
-        Some("select") => cmd_select(),
-        _ => {
-            eprintln!("Usage: hatoba <init <bash|zsh> | select>");
-            process::exit(1);
+        Command::Select => {
+            if let Err(e) = cmd_select() {
+                eprintln!("hatoba: {e}");
+                process::exit(1);
+            }
         }
-    };
-
-    if let Err(e) = result {
-        eprintln!("hatoba: {e}");
-        process::exit(1);
     }
 }
 
-fn cmd_init(shell: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let script = init::generate(shell)?;
-    print!("{script}");
-    Ok(())
+fn cmd_init(shell: &str) {
+    print!("{}", init::generate(shell));
 }
 
 fn cmd_select() -> Result<(), Box<dyn std::error::Error>> {
@@ -38,15 +60,9 @@ fn cmd_select() -> Result<(), Box<dyn std::error::Error>> {
         return Err("no directories configured in config.toml".into());
     }
 
-    let path = if config.dirs.len() == 1 {
-        config.dirs[0].path.clone()
-    } else {
-        match select::run(&config)? {
-            Some(p) => p,
-            None => process::exit(1),
-        }
-    };
-
-    println!("{path}");
+    match select::run(&config)? {
+        Some(path) => println!("{path}"),
+        None => process::exit(1),
+    }
     Ok(())
 }

@@ -1,11 +1,8 @@
-pub fn generate(shell: &str) -> Result<String, String> {
+pub fn generate(shell: &str) -> String {
     match shell {
-        "bash" => Ok(BASH_SCRIPT.to_string()),
-        "zsh" => Ok(ZSH_SCRIPT.to_string()),
-        other => Err(format!(
-            "unsupported shell: '{}'. Use 'bash' or 'zsh'",
-            other
-        )),
+        "bash" => BASH_SCRIPT.to_string(),
+        "zsh" => ZSH_SCRIPT.to_string(),
+        other => unreachable!("unsupported shell: {other}"),
     }
 }
 
