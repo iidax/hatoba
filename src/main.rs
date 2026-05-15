@@ -40,12 +40,14 @@ fn main() {
             };
             cmd_init(name);
         }
-        Command::Select => {
-            if let Err(e) = cmd_select() {
+        Command::Select => match cmd_select() {
+            Ok(Some(path)) => println!("{path}"),
+            Ok(None) => process::exit(1),
+            Err(e) => {
                 eprintln!("hatoba: {e}");
                 process::exit(1);
             }
-        }
+        },
     }
 }
 
@@ -53,16 +55,12 @@ fn cmd_init(shell: &str) {
     print!("{}", init::generate(shell));
 }
 
-fn cmd_select() -> Result<(), Box<dyn std::error::Error>> {
+fn cmd_select() -> Result<Option<String>, Box<dyn std::error::Error>> {
     let config = config::load()?;
 
     if config.dirs.is_empty() {
         return Err("no directories configured in config.toml".into());
     }
 
-    match select::run(&config)? {
-        Some(path) => println!("{path}"),
-        None => process::exit(1),
-    }
-    Ok(())
+    select::run(&config)
 }
