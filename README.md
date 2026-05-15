@@ -75,6 +75,19 @@ cd hatoba-rs
 cargo build
 ```
 
+```bash
+# format
+cargo fmt
+# clippy
+cargo clippy
+# build
+cargo build --release
+# install
+cargo install --path .
+```
+
+
+
 ## ライセンス
 
 MIT
