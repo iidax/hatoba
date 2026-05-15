@@ -3,7 +3,6 @@ use std::path::PathBuf;
 
 #[derive(Deserialize)]
 pub struct Config {
-    pub default: Option<String>,
     #[serde(default)]
     pub dirs: Vec<Dir>,
 }
@@ -12,6 +11,8 @@ pub struct Config {
 pub struct Dir {
     pub path: String,
     pub label: Option<String>,
+    #[serde(default)]
+    pub default: bool,
 }
 
 impl Dir {
@@ -41,9 +42,6 @@ pub fn load(config_path: Option<std::path::PathBuf>) -> Result<Config, Box<dyn s
 }
 
 fn expand_paths(config: &mut Config) -> Result<(), Box<dyn std::error::Error>> {
-    if let Some(default) = &config.default {
-        config.default = Some(shellexpand::full(default)?.into_owned());
-    }
     for dir in &mut config.dirs {
         dir.path = shellexpand::full(&dir.path)?.into_owned();
     }

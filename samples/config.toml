@@ -1,6 +1,4 @@
-default = "${HOME}/Workspace"
-
 dirs = [
-    { path = "${HOME}/Workspace/iidax/hatoba", label = "hatoba" },
+    { path = "${HOME}/Workspace/iidax/hatoba", label = "hatoba", default = true },
     { path = "${HOME}/Workspace/iidax", label = "iidax" },
 ]
