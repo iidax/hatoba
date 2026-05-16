@@ -22,8 +22,14 @@ pub fn run(config: &Config) -> Result<Option<String>, Box<dyn std::error::Error>
         })
         .collect();
 
+    let current = std::env::current_dir()
+        .map(|p| p.display().to_string())
+        .unwrap_or_else(|_| "?".to_string());
+
     let selection = Select::new()
-        .with_prompt("hatoba: 作業ディレクトリを選択")
+        .with_prompt(format!(
+            "hatoba: 作業ディレクトリを選択  (↑/↓ j/k で移動、Enter/Space で決定、Esc/q でキャンセル → {current})"
+        ))
         .items(&items)
         .default(default_idx)
         .interact_opt()?;
