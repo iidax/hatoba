@@ -1,13 +1,13 @@
 use serde::Deserialize;
 use std::path::PathBuf;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct Config {
     #[serde(default)]
     pub dirs: Vec<Dir>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct Dir {
     pub path: String,
     pub label: Option<String>,
@@ -51,4 +51,78 @@ fn expand_paths(config: &mut Config) -> Result<(), Box<dyn std::error::Error>> {
 fn config_path_default() -> Result<PathBuf, Box<dyn std::error::Error>> {
     let home = dirs::home_dir().ok_or("cannot determine home directory")?;
     Ok(home.join(".config").join("hatoba").join("config.toml"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write as IoWrite;
+
+    #[test]
+    fn display_returns_label_when_present() {
+        let dir = Dir {
+            path: "/home/user".to_string(),
+            label: Some("myproject".to_string()),
+            default: false,
+        };
+        assert_eq!(dir.display(), "myproject");
+    }
+
+    #[test]
+    fn display_returns_path_when_no_label() {
+        let dir = Dir {
+            path: "/home/user".to_string(),
+            label: None,
+            default: false,
+        };
+        assert_eq!(dir.display(), "/home/user");
+    }
+
+    #[test]
+    fn load_returns_error_when_file_missing() {
+        let result = load(Some(PathBuf::from("/nonexistent/path/config.toml")));
+        assert!(result.is_err());
+        let msg = result.unwrap_err().to_string();
+        assert!(msg.contains("config file not found"));
+        assert!(msg.contains("hint:"));
+    }
+
+    #[test]
+    fn load_parses_valid_toml() {
+        let mut file = tempfile::NamedTempFile::new().unwrap();
+        writeln!(
+            file,
+            r#"
+[[dirs]]
+path = "/tmp/foo"
+label = "foo"
+default = true
+"#
+        )
+        .unwrap();
+
+        let config = load(Some(file.path().to_path_buf())).unwrap();
+        assert_eq!(config.dirs.len(), 1);
+        assert_eq!(config.dirs[0].path, "/tmp/foo");
+        assert_eq!(config.dirs[0].label, Some("foo".to_string()));
+        assert!(config.dirs[0].default);
+    }
+
+    #[test]
+    fn load_expands_home_variable() {
+        let home = dirs::home_dir().unwrap();
+        let mut file = tempfile::NamedTempFile::new().unwrap();
+        writeln!(
+            file,
+            r#"
+[[dirs]]
+path = "$HOME/workspace"
+"#
+        )
+        .unwrap();
+
+        let config = load(Some(file.path().to_path_buf())).unwrap();
+        let expected = format!("{}/workspace", home.display());
+        assert_eq!(config.dirs[0].path, expected);
+    }
 }

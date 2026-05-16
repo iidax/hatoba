@@ -76,6 +76,8 @@ cargo build
 ```
 
 ```bash
+# test
+cargo test
 # format
 cargo fmt
 # clippy

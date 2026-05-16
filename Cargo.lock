@@ -243,6 +243,7 @@ dependencies = [
  "dirs",
  "serde",
  "shellexpand",
+ "tempfile",
  "toml",
 ]
 
