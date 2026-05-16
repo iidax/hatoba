@@ -60,7 +60,11 @@ fn main() {
 }
 
 fn cmd_init(shell: &str) {
-    print!("{}", init::generate(shell));
+    let bin = std::env::current_exe()
+        .unwrap_or_else(|_| PathBuf::from("hatoba"))
+        .to_string_lossy()
+        .into_owned();
+    print!("{}", init::generate(shell, &bin));
 }
 
 fn cmd_select(config_path: Option<PathBuf>) -> Result<Option<String>, Box<dyn std::error::Error>> {

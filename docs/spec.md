@@ -2,7 +2,7 @@
 
 ## 概要
 
-`hatoba` は SSH ログイン時にディレクトリ選択メニューを表示し、  
+`hatoba` は ログイン時にディレクトリ選択メニューを表示し、  
 矢印キーで作業ディレクトリを選んで `cd` できる CLI ツールです。
 
 ```
@@ -48,7 +48,6 @@ _hatoba_hook() {
 
 | 変数 / 条件 | 意味 |
 |---|---|
-| `$SSH_CONNECTION` が空でない | SSH 接続である |
 | `-t 0` かつ `-t 1` | 標準入出力が tty（インタラクティブ端末）である |
 | `$0 == "-bash"` / zsh の `-o login` | ログインシェルである |
 
@@ -124,7 +123,7 @@ src/
     │
     ▼
 シェルが _hatoba_hook を呼ぶ
-    │  SSH_CONNECTION / tty / login の確認はシェル側
+    │  tty / login の確認はシェル側
     ▼
 dir=$(hatoba select)      ← stdout をキャプチャ
     │
