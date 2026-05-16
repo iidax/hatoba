@@ -41,3 +41,60 @@ pub fn run(
     std::fs::write(&file_path, doc.to_string())?;
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write as IoWrite;
+
+    fn make_config_file(content: &str) -> tempfile::NamedTempFile {
+        let mut file = tempfile::NamedTempFile::new().unwrap();
+        writeln!(file, "{content}").unwrap();
+        file
+    }
+
+    #[test]
+    fn add_appends_new_entry() {
+        let file = make_config_file(
+            r#"
+[[dirs]]
+path = "/tmp/existing"
+"#,
+        );
+        run(Some(file.path().to_path_buf()), "/tmp/new", None, false).unwrap();
+        let config = crate::config::load(Some(file.path().to_path_buf())).unwrap();
+        assert_eq!(config.dirs.len(), 2);
+        assert_eq!(config.dirs[1].path, "/tmp/new");
+    }
+
+    #[test]
+    fn add_with_label() {
+        let file = make_config_file("[[dirs]]\npath = \"/tmp/a\"\n");
+        run(
+            Some(file.path().to_path_buf()),
+            "/tmp/b",
+            Some("B".to_string()),
+            false,
+        )
+        .unwrap();
+        let config = crate::config::load(Some(file.path().to_path_buf())).unwrap();
+        assert_eq!(config.dirs[1].label, Some("B".to_string()));
+    }
+
+    #[test]
+    fn add_with_default_clears_existing_defaults() {
+        let file = make_config_file("[[dirs]]\npath = \"/tmp/a\"\ndefault = true\n");
+        run(Some(file.path().to_path_buf()), "/tmp/b", None, true).unwrap();
+        let config = crate::config::load(Some(file.path().to_path_buf())).unwrap();
+        assert!(!config.dirs[0].default);
+        assert!(config.dirs[1].default);
+    }
+
+    #[test]
+    fn add_fails_on_duplicate_path() {
+        let file = make_config_file("[[dirs]]\npath = \"/tmp/a\"\n");
+        let result = run(Some(file.path().to_path_buf()), "/tmp/a", None, false);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("already exists"));
+    }
+}

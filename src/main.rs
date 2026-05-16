@@ -85,7 +85,11 @@ fn main() {
                 process::exit(1);
             }
         },
-        Command::Add { path, label, default } => {
+        Command::Add {
+            path,
+            label,
+            default,
+        } => {
             if let Err(e) = cmd::add::run(cli.config, &path, label, default) {
                 eprintln!("hatoba: {e}");
                 process::exit(1);
