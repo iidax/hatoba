@@ -1,10 +1,5 @@
-mod add;
+mod cmd;
 mod config;
-mod default;
-mod init;
-mod list;
-mod remove;
-mod select;
 
 use clap::{Parser, Subcommand, ValueEnum};
 use std::path::PathBuf;
@@ -84,26 +79,26 @@ fn main() {
             }
         },
         Command::List => match config::load(cli.config) {
-            Ok(config) => list::run(&config),
+            Ok(config) => cmd::list::run(&config),
             Err(e) => {
                 eprintln!("hatoba: {e}");
                 process::exit(1);
             }
         },
         Command::Add { path, label, default } => {
-            if let Err(e) = add::run(cli.config, &path, label, default) {
+            if let Err(e) = cmd::add::run(cli.config, &path, label, default) {
                 eprintln!("hatoba: {e}");
                 process::exit(1);
             }
         }
         Command::Default { path } => {
-            if let Err(e) = default::run(cli.config, &path) {
+            if let Err(e) = cmd::default::run(cli.config, &path) {
                 eprintln!("hatoba: {e}");
                 process::exit(1);
             }
         }
         Command::Remove { path } => {
-            if let Err(e) = remove::run(cli.config, &path) {
+            if let Err(e) = cmd::remove::run(cli.config, &path) {
                 eprintln!("hatoba: {e}");
                 process::exit(1);
             }
@@ -116,7 +111,7 @@ fn cmd_init(shell: &str) {
         .unwrap_or_else(|_| PathBuf::from("hatoba"))
         .to_string_lossy()
         .into_owned();
-    print!("{}", init::generate(shell, &bin));
+    print!("{}", cmd::init::generate(shell, &bin));
 }
 
 fn cmd_select(config_path: Option<PathBuf>) -> Result<Option<String>, Box<dyn std::error::Error>> {
@@ -126,5 +121,5 @@ fn cmd_select(config_path: Option<PathBuf>) -> Result<Option<String>, Box<dyn st
         return Err("no directories configured in config.toml".into());
     }
 
-    select::run(&config)
+    cmd::select::run(&config)
 }
