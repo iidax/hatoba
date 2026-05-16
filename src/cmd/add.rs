@@ -8,17 +8,23 @@ pub fn run(
     default: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let file_path = config_path.map(Ok).unwrap_or_else(config_path_default)?;
+    if !file_path.exists() {
+        if let Some(dir) = file_path.parent() {
+            std::fs::create_dir_all(dir)?;
+        }
+        std::fs::write(&file_path, "")?;
+    }
     let content = std::fs::read_to_string(&file_path)?;
     let mut doc = content.parse::<toml_edit::DocumentMut>()?;
 
-    if let Some(dirs) = doc["dirs"].as_array_of_tables() {
+    if let Some(dirs) = doc.get("dirs").and_then(|v| v.as_array_of_tables()) {
         if dirs.iter().any(|d| d["path"].as_str() == Some(path)) {
             return Err(format!("already exists: {path}").into());
         }
     }
 
     if default {
-        if let Some(dirs) = doc["dirs"].as_array_of_tables_mut() {
+        if let Some(dirs) = doc.get_mut("dirs").and_then(|v| v.as_array_of_tables_mut()) {
             for dir in dirs.iter_mut() {
                 dir["default"] = toml_edit::value(false);
             }
@@ -33,12 +39,16 @@ pub fn run(
     if default {
         table["default"] = toml_edit::value(true);
     }
-    doc["dirs"]
+    doc.entry("dirs")
+        .or_insert(toml_edit::Item::ArrayOfTables(
+            toml_edit::ArrayOfTables::new(),
+        ))
         .as_array_of_tables_mut()
         .ok_or("dirs is not an array of tables")?
         .push(table);
 
     std::fs::write(&file_path, doc.to_string())?;
+    println!("Added: {path}");
     Ok(())
 }
 
@@ -51,6 +61,18 @@ mod tests {
         let mut file = tempfile::NamedTempFile::new().unwrap();
         writeln!(file, "{content}").unwrap();
         file
+    }
+
+    #[test]
+    fn add_creates_file_when_missing() {
+        let dir = tempfile::tempdir().unwrap();
+        let file_path = dir.path().join("config.toml");
+        assert!(!file_path.exists());
+        run(Some(file_path.clone()), "/tmp/new", None, false).unwrap();
+        assert!(file_path.exists());
+        let config = crate::config::load(Some(file_path)).unwrap();
+        assert_eq!(config.dirs.len(), 1);
+        assert_eq!(config.dirs[0].path, "/tmp/new");
     }
 
     #[test]

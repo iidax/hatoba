@@ -7,10 +7,10 @@ pub fn run(config: &Config) {
 }
 
 fn format_line(dir: &Dir) -> String {
-    if dir.default {
-        format!("{}  (default)", dir.display())
-    } else {
-        dir.display().to_string()
+    let default_marker = if dir.default { "  (default)" } else { "" };
+    match &dir.label {
+        Some(label) => format!("{}  {}{}", label, dir.path, default_marker),
+        None => format!("{}{}", dir.path, default_marker),
     }
 }
 
@@ -27,20 +27,26 @@ mod tests {
     }
 
     #[test]
-    fn format_line_shows_default_marker() {
-        let d = dir("/tmp/foo", None, true);
-        assert_eq!(format_line(&d), "/tmp/foo  (default)");
-    }
-
-    #[test]
-    fn format_line_no_marker_when_not_default() {
+    fn format_line_path_only_when_no_label() {
         let d = dir("/tmp/foo", None, false);
         assert_eq!(format_line(&d), "/tmp/foo");
     }
 
     #[test]
-    fn format_line_uses_label_over_path() {
+    fn format_line_path_only_with_default_marker() {
+        let d = dir("/tmp/foo", None, true);
+        assert_eq!(format_line(&d), "/tmp/foo  (default)");
+    }
+
+    #[test]
+    fn format_line_label_and_path_when_label_present() {
+        let d = dir("/tmp/foo", Some("foo"), false);
+        assert_eq!(format_line(&d), "foo  /tmp/foo");
+    }
+
+    #[test]
+    fn format_line_label_and_path_with_default_marker() {
         let d = dir("/tmp/foo", Some("foo"), true);
-        assert_eq!(format_line(&d), "foo  (default)");
+        assert_eq!(format_line(&d), "foo  /tmp/foo  (default)");
     }
 }

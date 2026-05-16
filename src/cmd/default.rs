@@ -11,7 +11,7 @@ pub fn run(config_path: Option<PathBuf>, path: &str) -> Result<(), Box<dyn std::
         .ok_or("dirs is not an array of tables")?;
 
     if !dirs.iter().any(|d| d["path"].as_str() == Some(path)) {
-        return Err(format!("not found: {path}").into());
+        return Err(not_found_error(dirs, path));
     }
 
     for dir in dirs.iter_mut() {
@@ -20,7 +20,21 @@ pub fn run(config_path: Option<PathBuf>, path: &str) -> Result<(), Box<dyn std::
     }
 
     std::fs::write(&file_path, doc.to_string())?;
+    println!("Default set to: {path}");
     Ok(())
+}
+
+fn not_found_error(dirs: &toml_edit::ArrayOfTables, path: &str) -> Box<dyn std::error::Error> {
+    let alt = if path.ends_with('/') {
+        path.trim_end_matches('/').to_string()
+    } else {
+        format!("{path}/")
+    };
+    if dirs.iter().any(|d| d["path"].as_str() == Some(alt.as_str())) {
+        format!("not found: {path}\nhint: did you mean '{alt}'?").into()
+    } else {
+        format!("not found: {path}").into()
+    }
 }
 
 #[cfg(test)]
@@ -58,5 +72,14 @@ path = "/tmp/b"
         let result = run(Some(file.path().to_path_buf()), "/tmp/nonexistent");
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("not found"));
+    }
+
+    #[test]
+    fn default_hints_trailing_slash_difference() {
+        let file = make_config_file("[[dirs]]\npath = \"/tmp/a\"\n");
+        let result = run(Some(file.path().to_path_buf()), "/tmp/a/");
+        let msg = result.unwrap_err().to_string();
+        assert!(msg.contains("hint:"));
+        assert!(msg.contains("/tmp/a"));
     }
 }

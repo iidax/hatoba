@@ -13,12 +13,26 @@ pub fn run(config_path: Option<PathBuf>, path: &str) -> Result<(), Box<dyn std::
     let idx = dirs
         .iter()
         .position(|d| d["path"].as_str() == Some(path))
-        .ok_or_else(|| format!("not found: {path}"))?;
+        .ok_or_else(|| not_found_error(dirs, path))?;
 
     dirs.remove(idx);
 
     std::fs::write(&file_path, doc.to_string())?;
+    println!("Removed: {path}");
     Ok(())
+}
+
+fn not_found_error(dirs: &toml_edit::ArrayOfTables, path: &str) -> Box<dyn std::error::Error> {
+    let alt = if path.ends_with('/') {
+        path.trim_end_matches('/').to_string()
+    } else {
+        format!("{path}/")
+    };
+    if dirs.iter().any(|d| d["path"].as_str() == Some(alt.as_str())) {
+        format!("not found: {path}\nhint: did you mean '{alt}'?").into()
+    } else {
+        format!("not found: {path}").into()
+    }
 }
 
 #[cfg(test)]
@@ -55,5 +69,14 @@ path = "/tmp/b"
         let result = run(Some(file.path().to_path_buf()), "/tmp/nonexistent");
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("not found"));
+    }
+
+    #[test]
+    fn remove_hints_trailing_slash_difference() {
+        let file = make_config_file("[[dirs]]\npath = \"/tmp/a\"\n");
+        let result = run(Some(file.path().to_path_buf()), "/tmp/a/");
+        let msg = result.unwrap_err().to_string();
+        assert!(msg.contains("hint:"));
+        assert!(msg.contains("/tmp/a"));
     }
 }
