@@ -20,30 +20,63 @@ cargo install hatoba
 
 ## セットアップ
 
-### 1. 設定ファイルを作成
+### 1. シェルに統合する
+
+**.zshrc の場合：**
+
+```zsh
+eval "$(hatoba init zsh)"
+```
+
+**.bashrc の場合：**
+
+```bash
+eval "$(hatoba init bash)"
+```
+
+追記後、シェルを再起動するか `source ~/.zshrc` を実行してください。
+
+### 2. ディレクトリを登録する
+
+```bash
+# 候補を追加（初回はファイルも自動作成されます）
+hatoba add ~/Workspace/myproject --label myproject --default
+
+# 追加の候補
+hatoba add ~/Workspace/other --label other
+
+# 登録内容を確認
+hatoba list
+```
+
+`~/.config/hatoba/config.toml` を直接編集することもできます：
 
 ```toml
 # ~/.config/hatoba/config.toml
-
-default = "/mnt/ssd4/username"
+[[dirs]]
+path = "~/Workspace/myproject"
+label = "myproject"
+default = true
 
 [[dirs]]
-path = "/home/username"
-label = "home"
-
-[[dirs]]
-path = "/mnt/ssd4/username"
-label = "ssd4"
+path = "~/Workspace/other"
+label = "other"
 ```
 
-### 2. `.bashrc` に追記
+## 設定の管理
+
+| コマンド | 説明 |
+|---|---|
+| `hatoba list` | 登録済みディレクトリを一覧表示 |
+| `hatoba add <path> [--label <name>] [--default]` | ディレクトリを追加 |
+| `hatoba remove <path>` | ディレクトリを削除 |
+| `hatoba default <path>` | デフォルト選択を変更 |
 
 ```bash
-# for bash
-eval "$(hatoba init bash)"
-
-# for zsh
-eval "$(hatoba init zsh)"
+# 例
+hatoba add ~/Workspace/foo --label foo --default
+hatoba remove ~/Workspace/old
+hatoba default ~/Workspace/foo
 ```
 
 ## 発動条件
@@ -52,43 +85,33 @@ eval "$(hatoba init zsh)"
 
 | 条件 | 内容 |
 |---|---|
-| `$SSH_CONNECTION` | SSH 接続である |
 | `-t 0` / `-t 1` | インタラクティブな端末セッションである |
 | `login_shell` | ログインシェルである |
+| `$PWD == $HOME` | カレントディレクトリがホームディレクトリである |
 
 ## 動作イメージ
 
-
 ```
-=== Select working directory ===
-↑↓ で移動、Enter で決定
-
-  /home/username
-▶ /mnt/ssd4/username       (default)
+hatoba: 作業ディレクトリを選択
+  myproject  ~/Workspace/myproject  (default)
+  other      ~/Workspace/other
 ```
 
 ## 開発
 
 ```bash
-git clone https://github.com/suenaga-hiroshi/hatoba-rs
-cd hatoba-rs
+git clone https://github.com/iidax/hatoba
+cd hatoba
 cargo build
 ```
 
 ```bash
-# test
-cargo test
-# format
-cargo fmt
-# clippy
-cargo clippy
-# build
+cargo test          # テスト
+cargo fmt           # フォーマット
+cargo clippy        # 静的解析
 cargo build --release
-# install
 cargo install --path .
 ```
-
-
 
 ## ライセンス
 
