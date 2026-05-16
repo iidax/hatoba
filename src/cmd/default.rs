@@ -30,7 +30,10 @@ fn not_found_error(dirs: &toml_edit::ArrayOfTables, path: &str) -> Box<dyn std::
     } else {
         format!("{path}/")
     };
-    if dirs.iter().any(|d| d["path"].as_str() == Some(alt.as_str())) {
+    if dirs
+        .iter()
+        .any(|d| d["path"].as_str() == Some(alt.as_str()))
+    {
         format!("not found: {path}\nhint: did you mean '{alt}'?").into()
     } else {
         format!("not found: {path}").into()

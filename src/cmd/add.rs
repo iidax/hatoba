@@ -17,17 +17,15 @@ pub fn run(
     let content = std::fs::read_to_string(&file_path)?;
     let mut doc = content.parse::<toml_edit::DocumentMut>()?;
 
-    if let Some(dirs) = doc.get("dirs").and_then(|v| v.as_array_of_tables()) {
-        if dirs.iter().any(|d| d["path"].as_str() == Some(path)) {
-            return Err(format!("already exists: {path}").into());
-        }
+    if let Some(dirs) = doc.get("dirs").and_then(|v| v.as_array_of_tables())
+        && dirs.iter().any(|d| d["path"].as_str() == Some(path))
+    {
+        return Err(format!("already exists: {path}").into());
     }
 
-    if default {
-        if let Some(dirs) = doc.get_mut("dirs").and_then(|v| v.as_array_of_tables_mut()) {
-            for dir in dirs.iter_mut() {
-                dir["default"] = toml_edit::value(false);
-            }
+    if default && let Some(dirs) = doc.get_mut("dirs").and_then(|v| v.as_array_of_tables_mut()) {
+        for dir in dirs.iter_mut() {
+            dir["default"] = toml_edit::value(false);
         }
     }
 

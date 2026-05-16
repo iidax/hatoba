@@ -116,6 +116,13 @@ fn cmd_init(shell: &str) {
         .to_string_lossy()
         .into_owned();
     print!("{}", cmd::init::generate(shell, &bin));
+    let rc_file = match shell {
+        "bash" => "~/.bashrc",
+        "zsh" => "~/.zshrc",
+        _ => unreachable!(),
+    };
+    eprintln!("# {rc_file} に以下を追記してください:");
+    eprintln!("#   eval \"$({bin} init {shell})\"");
 }
 
 fn cmd_select(config_path: Option<PathBuf>) -> Result<Option<String>, Box<dyn std::error::Error>> {
