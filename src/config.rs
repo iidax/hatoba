@@ -48,7 +48,7 @@ fn expand_paths(config: &mut Config) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn config_path_default() -> Result<PathBuf, Box<dyn std::error::Error>> {
+pub fn config_path_default() -> Result<PathBuf, Box<dyn std::error::Error>> {
     let home = dirs::home_dir().ok_or("cannot determine home directory")?;
     Ok(home.join(".config").join("hatoba").join("config.toml"))
 }

@@ -1,4 +1,12 @@
-dirs = [
-    { path = "${HOME}/Workspace/iidax/hatoba", label = "hatoba", default = true },
-    { path = "${HOME}/Workspace/iidax", label = "iidax" },
-]
+# 作業ディレクトリの候補リスト
+# label: 省略可。省略するとパスがそのまま表示される
+# default: 省略可。カーソルの初期位置（複数 true にしても最初の1つだけ有効）
+
+[[dirs]]
+path = "~/Workspace/iidax/hatoba"
+label = "hatoba"
+default = true
+
+[[dirs]]
+path = "~/Workspace/iidax"
+label = "iidax"
