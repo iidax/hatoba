@@ -8,7 +8,8 @@ use std::process;
 #[derive(Parser)]
 #[command(
     name = "hatoba",
-    about = "SSH ログイン時に作業ディレクトリを対話的に選択する"
+    about = "SSH ログイン時に作業ディレクトリを対話的に選択する",
+    version
 )]
 struct Cli {
     /// 設定ファイルのパス（省略時はデフォルト位置を使用）

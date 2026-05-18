@@ -10,26 +10,22 @@ OSS として公開するために必要な最低限の整備。
 
 ### インフラ・メタデータ
 
-- [ ] **LICENSE ファイルを追加**
+- [x] **LICENSE ファイルを追加**
   - `LICENSE`（MIT テキスト）をリポジトリルートに配置
-- [ ] **Cargo.toml メタデータを整備**
+- [x] **Cargo.toml メタデータを整備**
   - `description`, `license`, `repository`, `keywords`, `categories` を追加
-- [ ] **`hatoba --version` を有効化**
+- [x] **`hatoba --version` を有効化**
   - `main.rs` の `#[command(...)]` に `version` 属性を追加
-- [ ] **CHANGELOG.md を作成**
-  - [Keep a Changelog](https://keepachangelog.com/) 形式で初回リリース内容を記載
-
 ### CI/CD
 
-- [ ] **GitHub Actions を追加**
+- [x] **GitHub Actions を追加**
   - `cargo test` の自動実行（push / PR）
   - `cargo fmt --check` と `cargo clippy -- -D warnings`
-  - macOS / Linux のマトリクスビルド
+  - macOS / Linux のマトリクスビルド（`.github/workflows/ci.yml`）
+- [x] **リリース自動化**
+  - タグ付け時に GitHub Release を自動作成する workflow（`.github/workflows/release.yml`）
 
-### 公開
 
-- [ ] **crates.io への publish**
-  - `cargo publish` で登録
 
 ---
 
@@ -38,6 +34,7 @@ OSS として公開するために必要な最低限の整備。
 公開後の継続的な整備。
 
 - [ ] **英語版 README を追加**（`README.md` を英語化、または `README_ja.md` に分離）
+- [ ] **ソースコード内の日本語を英語化**
 - [ ] **CONTRIBUTING.md を作成**
   - 開発環境のセットアップ手順
   - PR / Issue の送り方
@@ -45,8 +42,11 @@ OSS として公開するために必要な最低限の整備。
   - `.github/ISSUE_TEMPLATE/bug_report.md`
   - `.github/ISSUE_TEMPLATE/feature_request.md`
   - `.github/pull_request_template.md`
-- [ ] **リリース自動化**
-  - タグ付け時に GitHub Release を自動作成する workflow
+
+### 公開
+
+- [ ] **crates.io への publish**
+  - `cargo publish` で登録
 
 ---
 
