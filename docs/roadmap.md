@@ -35,12 +35,12 @@ OSS として公開するために必要な最低限の整備。
 
 - [x] **英語版 README を追加**（`README.md` を英語化、または `README_ja.md` に分離）
 - [x] **ソースコード内の日本語を英語化**
-- [ ] **CONTRIBUTING.md を作成**
+- [x] **CONTRIBUTING.md を作成**
   - 開発環境のセットアップ手順
   - PR / Issue の送り方
-- [ ] **GitHub テンプレートを追加**
-  - `.github/ISSUE_TEMPLATE/bug_report.md`
-  - `.github/ISSUE_TEMPLATE/feature_request.md`
+- [x] **GitHub テンプレートを追加**
+  - `.github/ISSUE_TEMPLATE/01-enhancement.yml`
+  - `.github/ISSUE_TEMPLATE/02-bug.yml`
   - `.github/pull_request_template.md`
 
 ### 公開

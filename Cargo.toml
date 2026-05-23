@@ -2,6 +2,7 @@
 name = "hatoba"
 version = "0.1.2"
 edition = "2024"
+rust-version = "1.85.0"
 authors = ["iidax <62173975+iidax@users.noreply.github.com>"]
 description = "Select and jump to your favorite directories"
 license = "MIT"

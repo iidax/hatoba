@@ -2,7 +2,7 @@
 
 ## 前提条件
 
-- Rust 1.75.0 以上
+- Rust 1.85.0 以上
 
 ## 動作イメージ
 
@@ -36,8 +36,13 @@ cargo build
 cargo test          # テスト
 cargo fmt           # フォーマット
 cargo clippy        # 静的解析
-cargo build --release
-cargo install --path .
+```
+
+リリースビルドとインストール：
+
+```bash
+cargo build --release   # 最適化バイナリを target/release/ に生成
+cargo install --path .  # ~/.cargo/bin/ にインストール
 ```
 
 ## ライセンス

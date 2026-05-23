@@ -1,0 +1,67 @@
+name: Feature Request / Improvement / Refactoring
+description: Use this template for feature additions, removals, or refactoring.
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: overview
+    attributes:
+      label: Overview
+      description: |
+        Describe what you want to accomplish in this issue.
+      placeholder: |
+         - [ ] Remove XXX
+         - [ ] Add YYY
+         - [ ] Create ZZZ
+    validations:
+      required: true
+  - type: textarea
+    id: pages
+    attributes:
+      label: Related Files
+      description: |
+        List the files related to this issue.
+      placeholder: |
+         - `src/XXX.rs`
+    validations:
+      required: false
+  - type: textarea
+    id: background
+    attributes:
+      label: Background and Motivation
+      description: |
+        What problem are you facing? Describe the background and motivation for this issue.
+      placeholder: |
+         - Introducing YYY because it simplifies the current implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: goal
+    attributes:
+      label: Expected Outcome
+      description: |
+        What state do you expect after this issue is resolved? Be as specific as possible.
+      placeholder: |
+         - AAA becomes possible
+    validations:
+      required: false
+  - type: textarea
+    id: specification
+    attributes:
+      label: Specification
+      description: |
+        Describe any technical specifications or implementation details.
+      placeholder: |
+         - The current XXX library cannot be used, so use YYY instead
+         - When using YYY, ZZZ needs to be created
+    validations:
+      required: false
+  - type: textarea
+    id: reference
+    attributes:
+      label: References
+      description: |
+        Add any relevant links or resources.
+      placeholder: |
+        - [Article Title](http://example.com)
+    validations:
+      required: false

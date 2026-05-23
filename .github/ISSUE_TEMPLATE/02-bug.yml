@@ -1,0 +1,82 @@
+name: Bug Report
+description: Use this template to report a bug.
+labels: ["bug"]
+body:
+  - type: textarea
+    id: overview
+    attributes:
+      label: Overview
+      description: |
+        Describe the bug. If it is a visual issue, please attach a screenshot.
+    validations:
+      required: true
+  - type: textarea
+    id: pages
+    attributes:
+      label: Related Files
+      description: |
+        If you know where the bug occurs, list the relevant files.
+      placeholder: |
+         - `src/XXX.rs`
+    validations:
+      required: false
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: |
+        Describe the environment where the bug occurred.
+        Example: macOS 14, hatoba v0.1.2
+    validations:
+      required: false
+  - type: textarea
+    id: process
+    attributes:
+      label: Steps to Reproduce
+      description: Describe the steps to reproduce the bug.
+      placeholder: |
+         1. foo
+         2. bar
+         3. baz
+    validations:
+      required: false
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: |
+        Describe what you expected to happen.
+      placeholder: |
+         - XXX is displayed
+    validations:
+      required: false
+  - type: textarea
+    id: trouble
+    attributes:
+      label: Impact
+      description: |
+        Describe what problems will occur if this bug is not fixed.
+      placeholder: |
+         - YYY will no longer work
+    validations:
+      required: false
+  - type: textarea
+    id: workaround
+    attributes:
+      label: Possible Fix
+      description: |
+        If you have any ideas on how to fix this, please describe them.
+      placeholder: |
+         - Fix XXX in src/yyy.rs
+    validations:
+      required: false
+  - type: textarea
+    id: reference
+    attributes:
+      label: References
+      description: |
+        Add any relevant links or resources.
+      placeholder: |
+        - [Article Title](http://example.com)
+    validations:
+      required: false
