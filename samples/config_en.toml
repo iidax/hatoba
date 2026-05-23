@@ -1,0 +1,15 @@
+# List of candidate working directories
+# label: optional. If omitted, the path is shown as-is
+# default: optional. Initial cursor position (only the first true entry is effective)
+
+[[dirs]]
+path = "~/Workspace/iidax/hatoba"
+label = "hatoba"
+default = true
+
+[[dirs]]
+path = "~/Workspace/iidax"
+label = "iidax"
+
+[settings]
+language = "en"
