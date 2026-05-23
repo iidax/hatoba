@@ -1,8 +1,8 @@
-use crate::config::{Config, Dir};
+use crate::config::Dir;
 use crate::messages::Msg;
 
-pub fn run(config: &Config, msg: &Msg) {
-    for dir in &config.dirs {
+pub fn run(dirs: &[Dir], msg: &Msg) {
+    for dir in dirs {
         println!("{}", format_line(dir, msg));
     }
 }

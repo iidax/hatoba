@@ -1,11 +1,9 @@
 use dialoguer::Select;
 
-use crate::config::Config;
+use crate::config::Dir;
 use crate::messages::Msg;
 
-pub fn run(config: &Config, msg: &Msg) -> Result<Option<String>, Box<dyn std::error::Error>> {
-    let dirs = &config.dirs;
-
+pub fn run(dirs: &[Dir], msg: &Msg) -> Result<Option<String>, Box<dyn std::error::Error>> {
     if dirs.len() == 1 {
         return Ok(Some(dirs[0].path.clone()));
     }
@@ -39,27 +37,23 @@ pub fn run(config: &Config, msg: &Msg) -> Result<Option<String>, Box<dyn std::er
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::{Config, Dir};
     use crate::messages;
 
-    fn make_config(paths: &[&str]) -> Config {
-        Config {
-            dirs: paths
-                .iter()
-                .map(|p| Dir {
-                    path: p.to_string(),
-                    label: None,
-                    default: false,
-                })
-                .collect(),
-            ..Default::default()
-        }
+    fn make_dirs(paths: &[&str]) -> Vec<Dir> {
+        paths
+            .iter()
+            .map(|p| Dir {
+                path: p.to_string(),
+                label: None,
+                default: false,
+            })
+            .collect()
     }
 
     #[test]
     fn run_returns_single_dir_without_interaction() {
-        let config = make_config(&["/tmp/only"]);
-        let result = run(&config, &messages::EN).unwrap();
+        let dirs = make_dirs(&["/tmp/only"]);
+        let result = run(&dirs, &messages::EN).unwrap();
         assert_eq!(result, Some("/tmp/only".to_string()));
     }
 }

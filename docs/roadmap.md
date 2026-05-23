@@ -56,8 +56,6 @@ OSS として公開するために必要な最低限の整備。
 
 | アイデア | 概要 |
 |---|---|
-| `hatoba edit` | `$EDITOR` で `config.toml` を直接開く |
-| `hatoba import` | 既存ディレクトリ一覧（`ls ~/Workspace`など）からまとめて登録 |
-| 設定プロファイル | 複数の config を切り替える（サーバごとに異なる選択肢） |
+| db | パスの編集をsqlite で扱うようにする |
 | Fish シェル対応 | `hatoba init fish` を追加 |
-| 選択履歴 | 最後に選んだディレクトリをデフォルトにする |
+| シェル補完 | auto completion を出力する |

@@ -1,15 +1,5 @@
-# List of candidate working directories
-# label: optional. If omitted, the path is shown as-is
-# default: optional. Initial cursor position (only the first true entry is effective)
-
-[[dirs]]
-path = "~/Workspace/iidax/hatoba"
-label = "hatoba"
-default = true
-
-[[dirs]]
-path = "~/Workspace/iidax"
-label = "iidax"
+# ディレクトリ候補は `hatoba add` コマンドで登録します
+# 登録データは ~/.local/share/hatoba/hatoba.db に保存されます
 
 [settings]
 language = "ja"

@@ -1,9 +1,10 @@
 mod cmd;
 mod config;
+mod db;
 mod messages;
 
 use clap::{Parser, Subcommand, ValueEnum};
-use config::Language;
+use config::{Config, Dir, Language};
 use std::path::PathBuf;
 use std::process;
 
@@ -17,6 +18,10 @@ struct Cli {
     /// Path to config file (defaults to ~/.config/hatoba/config.toml)
     #[arg(long, global = true)]
     config: Option<PathBuf>,
+
+    /// Path to DB file (defaults to ~/.local/share/hatoba/hatoba.db)
+    #[arg(long, global = true)]
+    db: Option<PathBuf>,
 
     #[command(subcommand)]
     command: Command,
@@ -76,8 +81,8 @@ enum LangArg {
 fn main() {
     let cli = Cli::parse();
 
-    let language = config::load_language(cli.config.clone());
-    let msg = messages::get(&language);
+    let config = Config::load(cli.config.clone());
+    let msg = messages::get(&config.language);
 
     match cli.command {
         Command::Init { shell } => {
@@ -87,7 +92,7 @@ fn main() {
             };
             cmd_init(name);
         }
-        Command::Select => match cmd_select(cli.config, msg) {
+        Command::Select => match cmd_select(cli.db, msg) {
             Ok(Some(path)) => println!("{path}"),
             Ok(None) => process::exit(1),
             Err(e) => {
@@ -95,8 +100,8 @@ fn main() {
                 process::exit(1);
             }
         },
-        Command::List => match config::load(cli.config) {
-            Ok(config) => cmd::list::run(&config, msg),
+        Command::List => match load_dirs(cli.db) {
+            Ok(dirs) => cmd::list::run(&dirs, msg),
             Err(e) => {
                 eprintln!("hatoba: {e}");
                 process::exit(1);
@@ -107,19 +112,19 @@ fn main() {
             label,
             default,
         } => {
-            if let Err(e) = cmd::add::run(cli.config, &path, label, default, msg) {
+            if let Err(e) = cmd::add::run(cli.db, &path, label, default, msg) {
                 eprintln!("hatoba: {e}");
                 process::exit(1);
             }
         }
         Command::Default { path } => {
-            if let Err(e) = cmd::default::run(cli.config, &path, msg) {
+            if let Err(e) = cmd::default::run(cli.db, &path, msg) {
                 eprintln!("hatoba: {e}");
                 process::exit(1);
             }
         }
         Command::Remove { path } => {
-            if let Err(e) = cmd::remove::run(cli.config, &path, msg) {
+            if let Err(e) = cmd::remove::run(cli.db, &path, msg) {
                 eprintln!("hatoba: {e}");
                 process::exit(1);
             }
@@ -137,6 +142,12 @@ fn main() {
     }
 }
 
+fn load_dirs(db_path: Option<PathBuf>) -> Result<Vec<Dir>, Box<dyn std::error::Error>> {
+    db::Db::open(db_path)
+        .and_then(|db| db.list_dirs())
+        .or_else(|_| Ok(vec![]))
+}
+
 fn cmd_init(shell: &str) {
     let bin = std::env::current_exe()
         .unwrap_or_else(|_| PathBuf::from("hatoba"))
@@ -146,14 +157,12 @@ fn cmd_init(shell: &str) {
 }
 
 fn cmd_select(
-    config_path: Option<PathBuf>,
+    db_path: Option<PathBuf>,
     msg: &messages::Msg,
 ) -> Result<Option<String>, Box<dyn std::error::Error>> {
-    let config = config::load(config_path)?;
-
-    if config.dirs.is_empty() {
-        return Err("no directories configured in config.toml".into());
+    let dirs = load_dirs(db_path)?;
+    if dirs.is_empty() {
+        return Err("no directories registered. Use 'hatoba add <path>' to add one.".into());
     }
-
-    cmd::select::run(&config, msg)
+    cmd::select::run(&dirs, msg)
 }
