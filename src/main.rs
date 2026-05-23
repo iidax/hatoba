@@ -64,6 +64,13 @@ enum Command {
         /// Language to set (en / ja). Omit to show the current setting
         language: Option<LangArg>,
     },
+    /// Swap the list positions of two directories
+    Swap {
+        /// First directory path
+        path1: String,
+        /// Second directory path
+        path2: String,
+    },
 }
 
 #[derive(ValueEnum, Clone)]
@@ -135,6 +142,12 @@ fn main() {
                 LangArg::Ja => Language::Ja,
             });
             if let Err(e) = cmd::lang::run(cli.config, lang) {
+                eprintln!("hatoba: {e}");
+                process::exit(1);
+            }
+        }
+        Command::Swap { path1, path2 } => {
+            if let Err(e) = cmd::swap::run(cli.db, &path1, &path2, msg) {
                 eprintln!("hatoba: {e}");
                 process::exit(1);
             }

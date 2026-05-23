@@ -104,6 +104,29 @@ impl Db {
         )?;
         Ok(())
     }
+
+    fn get_id_and_position(&self, path: &str) -> Result<(i64, i64), Box<dyn std::error::Error>> {
+        self.conn
+            .query_row(
+                "SELECT id, position FROM dirs WHERE path = ?1",
+                params![path],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .map_err(|_| not_found_error(&self.all_paths().unwrap_or_default(), path))
+    }
+
+    pub fn swap_dirs(&mut self, path1: &str, path2: &str) -> Result<(), Box<dyn std::error::Error>> {
+        if path1 == path2 {
+            return Err("cannot swap a directory with itself".into());
+        }
+        let (id1, pos1) = self.get_id_and_position(path1)?;
+        let (id2, pos2) = self.get_id_and_position(path2)?;
+        let tx = self.conn.transaction()?;
+        tx.execute("UPDATE dirs SET position = ?1 WHERE id = ?2", params![pos2, id1])?;
+        tx.execute("UPDATE dirs SET position = ?1 WHERE id = ?2", params![pos1, id2])?;
+        tx.commit()?;
+        Ok(())
+    }
 }
 
 pub fn db_path_default() -> Result<PathBuf, Box<dyn std::error::Error>> {

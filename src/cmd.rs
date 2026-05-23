@@ -4,4 +4,5 @@ pub mod init;
 pub mod lang;
 pub mod list;
 pub mod remove;
+pub mod swap;
 pub mod select;
