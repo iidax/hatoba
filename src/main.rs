@@ -51,13 +51,13 @@ enum Command {
     },
     /// Change the default selection
     Default {
-        /// Path of the directory to set as default
-        path: String,
+        /// Path of the directory to set as default (interactive if omitted)
+        path: Option<String>,
     },
     /// Remove a directory from the candidate list
     Remove {
-        /// Path of the directory to remove
-        path: String,
+        /// Path of the directory to remove (interactive if omitted)
+        path: Option<String>,
     },
     /// Show or set the display language
     Lang {
@@ -66,10 +66,10 @@ enum Command {
     },
     /// Swap the list positions of two directories
     Swap {
-        /// First directory path
-        path1: String,
-        /// Second directory path
-        path2: String,
+        /// First directory path (interactive if omitted)
+        path1: Option<String>,
+        /// Second directory path (interactive if omitted)
+        path2: Option<String>,
     },
 }
 
@@ -125,13 +125,13 @@ fn main() {
             }
         }
         Command::Default { path } => {
-            if let Err(e) = cmd::default::run(cli.db, &path, msg) {
+            if let Err(e) = cmd::default::run(cli.db, path.as_deref(), msg) {
                 eprintln!("hatoba: {e}");
                 process::exit(1);
             }
         }
         Command::Remove { path } => {
-            if let Err(e) = cmd::remove::run(cli.db, &path, msg) {
+            if let Err(e) = cmd::remove::run(cli.db, path.as_deref(), msg) {
                 eprintln!("hatoba: {e}");
                 process::exit(1);
             }
@@ -141,13 +141,13 @@ fn main() {
                 LangArg::En => Language::En,
                 LangArg::Ja => Language::Ja,
             });
-            if let Err(e) = cmd::lang::run(cli.config, lang) {
+            if let Err(e) = cmd::lang::run(cli.config, lang, msg) {
                 eprintln!("hatoba: {e}");
                 process::exit(1);
             }
         }
         Command::Swap { path1, path2 } => {
-            if let Err(e) = cmd::swap::run(cli.db, &path1, &path2, msg) {
+            if let Err(e) = cmd::swap::run(cli.db, path1.as_deref(), path2.as_deref(), msg) {
                 eprintln!("hatoba: {e}");
                 process::exit(1);
             }

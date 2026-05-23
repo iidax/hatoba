@@ -1,14 +1,47 @@
+use dialoguer::Select;
+
 use crate::db::Db;
 use crate::messages::Msg;
 use std::path::PathBuf;
 
 pub fn run(
     db_path: Option<PathBuf>,
-    path: &str,
+    path: Option<&str>,
     msg: &Msg,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut db = Db::open(db_path)?;
-    db.remove_directory(path)?;
+
+    let path = match path {
+        Some(p) => p.to_string(),
+        None => {
+            let directories = db.list_directories()?;
+            if directories.is_empty() {
+                return Err(
+                    "no directories registered. Use 'hatoba add <path>' to add one.".into(),
+                );
+            }
+            let items: Vec<String> = directories
+                .iter()
+                .map(|d| {
+                    if d.default {
+                        format!("{}{}", d.display(), msg.default_marker)
+                    } else {
+                        d.display().to_string()
+                    }
+                })
+                .collect();
+            let selection = Select::new()
+                .with_prompt(msg.remove_prompt)
+                .items(&items)
+                .interact_opt()?;
+            match selection {
+                Some(i) => directories[i].path.clone(),
+                None => return Ok(()),
+            }
+        }
+    };
+
+    db.remove_directory(&path)?;
     println!("{}: {path}", msg.removed);
     Ok(())
 }
@@ -31,7 +64,7 @@ mod tests {
     #[test]
     fn remove_deletes_entry() {
         let (db_path, _dir) = setup_db_with_entries(&["/tmp/a", "/tmp/b"]);
-        run(Some(db_path.clone()), "/tmp/a", &crate::messages::EN).unwrap();
+        run(Some(db_path.clone()), Some("/tmp/a"), &crate::messages::EN).unwrap();
         let db = Db::open(Some(db_path)).unwrap();
         let directories = db.list_directories().unwrap();
         assert_eq!(directories.len(), 1);
@@ -41,7 +74,11 @@ mod tests {
     #[test]
     fn remove_fails_when_path_not_found() {
         let (db_path, _dir) = setup_db_with_entries(&["/tmp/a"]);
-        let result = run(Some(db_path), "/tmp/nonexistent", &crate::messages::EN);
+        let result = run(
+            Some(db_path),
+            Some("/tmp/nonexistent"),
+            &crate::messages::EN,
+        );
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("not found"));
     }
@@ -49,7 +86,7 @@ mod tests {
     #[test]
     fn remove_hints_trailing_slash_difference() {
         let (db_path, _dir) = setup_db_with_entries(&["/tmp/a"]);
-        let result = run(Some(db_path), "/tmp/a/", &crate::messages::EN);
+        let result = run(Some(db_path), Some("/tmp/a/"), &crate::messages::EN);
         let msg = result.unwrap_err().to_string();
         assert!(msg.contains("hint:"));
         assert!(msg.contains("/tmp/a"));
