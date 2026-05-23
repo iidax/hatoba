@@ -61,13 +61,13 @@ impl Config {
 }
 
 #[derive(Debug)]
-pub struct Dir {
+pub struct Directory {
     pub path: String,
     pub label: Option<String>,
     pub default: bool,
 }
 
-impl Dir {
+impl Directory {
     pub fn display(&self) -> &str {
         self.label.as_deref().unwrap_or(&self.path)
     }
@@ -80,7 +80,7 @@ mod tests {
 
     #[test]
     fn display_returns_label_when_present() {
-        let dir = Dir {
+        let dir = Directory {
             path: "/home/user".to_string(),
             label: Some("myproject".to_string()),
             default: false,
@@ -90,7 +90,7 @@ mod tests {
 
     #[test]
     fn display_returns_path_when_no_label() {
-        let dir = Dir {
+        let dir = Directory {
             path: "/home/user".to_string(),
             label: None,
             default: false,

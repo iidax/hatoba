@@ -23,7 +23,7 @@ mod tests {
         let db_path = dir.path().join("test.db");
         let mut db = Db::open(Some(db_path.clone())).unwrap();
         for (path, default) in entries {
-            db.insert_dir(path, None, *default).unwrap();
+            db.insert_directory(path, None, *default).unwrap();
         }
         (db_path, dir)
     }
@@ -33,9 +33,9 @@ mod tests {
         let (db_path, _dir) = setup_db_with_entries(&[("/tmp/a", true), ("/tmp/b", false)]);
         run(Some(db_path.clone()), "/tmp/b", &crate::messages::EN).unwrap();
         let db = Db::open(Some(db_path)).unwrap();
-        let dirs = db.list_dirs().unwrap();
-        assert!(!dirs[0].default);
-        assert!(dirs[1].default);
+        let directories = db.list_directories().unwrap();
+        assert!(!directories[0].default);
+        assert!(directories[1].default);
     }
 
     #[test]

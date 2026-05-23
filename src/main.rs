@@ -4,7 +4,7 @@ mod db;
 mod messages;
 
 use clap::{Parser, Subcommand, ValueEnum};
-use config::{Config, Dir, Language};
+use config::{Config, Directory, Language};
 use std::path::PathBuf;
 use std::process;
 
@@ -107,8 +107,8 @@ fn main() {
                 process::exit(1);
             }
         },
-        Command::List => match load_dirs(cli.db) {
-            Ok(dirs) => cmd::list::run(&dirs, msg),
+        Command::List => match load_directories(cli.db) {
+            Ok(directories) => cmd::list::run(&directories, msg),
             Err(e) => {
                 eprintln!("hatoba: {e}");
                 process::exit(1);
@@ -155,9 +155,11 @@ fn main() {
     }
 }
 
-fn load_dirs(db_path: Option<PathBuf>) -> Result<Vec<Dir>, Box<dyn std::error::Error>> {
+fn load_directories(
+    db_path: Option<PathBuf>,
+) -> Result<Vec<Directory>, Box<dyn std::error::Error>> {
     db::Db::open(db_path)
-        .and_then(|db| db.list_dirs())
+        .and_then(|db| db.list_directories())
         .or_else(|_| Ok(vec![]))
 }
 
@@ -173,9 +175,9 @@ fn cmd_select(
     db_path: Option<PathBuf>,
     msg: &messages::Msg,
 ) -> Result<Option<String>, Box<dyn std::error::Error>> {
-    let dirs = load_dirs(db_path)?;
-    if dirs.is_empty() {
+    let directories = load_directories(db_path)?;
+    if directories.is_empty() {
         return Err("no directories registered. Use 'hatoba add <path>' to add one.".into());
     }
-    cmd::select::run(&dirs, msg)
+    cmd::select::run(&directories, msg)
 }

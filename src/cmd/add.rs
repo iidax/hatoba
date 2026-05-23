@@ -13,7 +13,7 @@ pub fn run(
     if db.path_exists(path)? {
         return Err(format!("already exists: {path}").into());
     }
-    db.insert_dir(path, label.as_deref(), default)?;
+    db.insert_directory(path, label.as_deref(), default)?;
     println!("{}: {path}", msg.added);
     Ok(())
 }
@@ -43,7 +43,7 @@ mod tests {
         .unwrap();
         assert!(db_path.exists());
         let db = Db::open(Some(db_path)).unwrap();
-        assert_eq!(db.list_dirs().unwrap().len(), 1);
+        assert_eq!(db.list_directories().unwrap().len(), 1);
     }
 
     #[test]
@@ -66,7 +66,7 @@ mod tests {
         )
         .unwrap();
         let db = Db::open(Some(db_path)).unwrap();
-        assert_eq!(db.list_dirs().unwrap().len(), 2);
+        assert_eq!(db.list_directories().unwrap().len(), 2);
     }
 
     #[test]
@@ -81,7 +81,10 @@ mod tests {
         )
         .unwrap();
         let db = Db::open(Some(db_path)).unwrap();
-        assert_eq!(db.list_dirs().unwrap()[0].label, Some("alpha".to_string()));
+        assert_eq!(
+            db.list_directories().unwrap()[0].label,
+            Some("alpha".to_string())
+        );
     }
 
     #[test]
@@ -104,9 +107,9 @@ mod tests {
         )
         .unwrap();
         let db = Db::open(Some(db_path)).unwrap();
-        let dirs = db.list_dirs().unwrap();
-        assert!(!dirs[0].default);
-        assert!(dirs[1].default);
+        let directories = db.list_directories().unwrap();
+        assert!(!directories[0].default);
+        assert!(directories[1].default);
     }
 
     #[test]

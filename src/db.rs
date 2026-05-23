@@ -1,4 +1,4 @@
-use crate::config::Dir;
+use crate::config::Directory;
 use include_dir::{Dir as IncludeDir, include_dir};
 use rusqlite::{Connection, params};
 use rusqlite_migration::Migrations;
@@ -25,25 +25,25 @@ impl Db {
         Ok(Self { conn })
     }
 
-    pub fn list_dirs(&self) -> Result<Vec<Dir>, Box<dyn std::error::Error>> {
+    pub fn list_directories(&self) -> Result<Vec<Directory>, Box<dyn std::error::Error>> {
         let mut stmt = self
             .conn
-            .prepare("SELECT path, label, is_default FROM dirs ORDER BY position, id")?;
-        let dirs = stmt
+            .prepare("SELECT path, label, is_default FROM directories ORDER BY position, id")?;
+        let directories = stmt
             .query_map([], |row| {
-                Ok(Dir {
+                Ok(Directory {
                     path: row.get(0)?,
                     label: row.get(1)?,
                     default: row.get::<_, bool>(2)?,
                 })
             })?
             .collect::<Result<Vec<_>, _>>()?;
-        Ok(dirs)
+        Ok(directories)
     }
 
     pub fn path_exists(&self, path: &str) -> Result<bool, Box<dyn std::error::Error>> {
         let count: i64 = self.conn.query_row(
-            "SELECT COUNT(*) FROM dirs WHERE path = ?1",
+            "SELECT COUNT(*) FROM directories WHERE path = ?1",
             params![path],
             |row| row.get(0),
         )?;
@@ -53,39 +53,39 @@ impl Db {
     pub fn all_paths(&self) -> Result<Vec<String>, Box<dyn std::error::Error>> {
         let mut stmt = self
             .conn
-            .prepare("SELECT path FROM dirs ORDER BY position, id")?;
+            .prepare("SELECT path FROM directories ORDER BY position, id")?;
         let paths = stmt
             .query_map([], |row| row.get(0))?
             .collect::<Result<Vec<_>, _>>()?;
         Ok(paths)
     }
 
-    pub fn insert_dir(
+    pub fn insert_directory(
         &mut self,
         path: &str,
         label: Option<&str>,
         default: bool,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let position: i64 = self.conn.query_row(
-            "SELECT COALESCE(MAX(position), -1) + 1 FROM dirs",
+            "SELECT COALESCE(MAX(position), -1) + 1 FROM directories",
             [],
             |row| row.get(0),
         )?;
         if default {
             self.conn
-                .execute("UPDATE dirs SET is_default = ?1", params![false])?;
+                .execute("UPDATE directories SET is_default = ?1", params![false])?;
         }
         self.conn.execute(
-            "INSERT INTO dirs (path, label, position, is_default) VALUES (?1, ?2, ?3, ?4)",
+            "INSERT INTO directories (path, label, position, is_default) VALUES (?1, ?2, ?3, ?4)",
             params![path, label, position, default],
         )?;
         Ok(())
     }
 
-    pub fn remove_dir(&mut self, path: &str) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn remove_directory(&mut self, path: &str) -> Result<(), Box<dyn std::error::Error>> {
         let rows = self
             .conn
-            .execute("DELETE FROM dirs WHERE path = ?1", params![path])?;
+            .execute("DELETE FROM directories WHERE path = ?1", params![path])?;
         if rows == 0 {
             return Err(not_found_error(&self.all_paths()?, path));
         }
@@ -97,9 +97,9 @@ impl Db {
             return Err(not_found_error(&self.all_paths()?, path));
         }
         self.conn
-            .execute("UPDATE dirs SET is_default = ?1", params![false])?;
+            .execute("UPDATE directories SET is_default = ?1", params![false])?;
         self.conn.execute(
-            "UPDATE dirs SET is_default = ?1 WHERE path = ?2",
+            "UPDATE directories SET is_default = ?1 WHERE path = ?2",
             params![true, path],
         )?;
         Ok(())
@@ -108,22 +108,32 @@ impl Db {
     fn get_id_and_position(&self, path: &str) -> Result<(i64, i64), Box<dyn std::error::Error>> {
         self.conn
             .query_row(
-                "SELECT id, position FROM dirs WHERE path = ?1",
+                "SELECT id, position FROM directories WHERE path = ?1",
                 params![path],
                 |row| Ok((row.get(0)?, row.get(1)?)),
             )
             .map_err(|_| not_found_error(&self.all_paths().unwrap_or_default(), path))
     }
 
-    pub fn swap_dirs(&mut self, path1: &str, path2: &str) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn swap_directories(
+        &mut self,
+        path1: &str,
+        path2: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         if path1 == path2 {
             return Err("cannot swap a directory with itself".into());
         }
         let (id1, pos1) = self.get_id_and_position(path1)?;
         let (id2, pos2) = self.get_id_and_position(path2)?;
         let tx = self.conn.transaction()?;
-        tx.execute("UPDATE dirs SET position = ?1 WHERE id = ?2", params![pos2, id1])?;
-        tx.execute("UPDATE dirs SET position = ?1 WHERE id = ?2", params![pos1, id2])?;
+        tx.execute(
+            "UPDATE directories SET position = ?1 WHERE id = ?2",
+            params![pos2, id1],
+        )?;
+        tx.execute(
+            "UPDATE directories SET position = ?1 WHERE id = ?2",
+            params![pos1, id2],
+        )?;
         tx.commit()?;
         Ok(())
     }
@@ -162,74 +172,74 @@ mod tests {
     }
 
     #[test]
-    fn list_dirs_empty_when_new() {
+    fn list_directories_empty_when_new() {
         let (db, _dir) = open_temp_db();
-        assert!(db.list_dirs().unwrap().is_empty());
+        assert!(db.list_directories().unwrap().is_empty());
     }
 
     #[test]
     fn insert_and_list() {
         let (mut db, _dir) = open_temp_db();
-        db.insert_dir("/tmp/a", Some("alpha"), false).unwrap();
-        let dirs = db.list_dirs().unwrap();
-        assert_eq!(dirs.len(), 1);
-        assert_eq!(dirs[0].path, "/tmp/a");
-        assert_eq!(dirs[0].label, Some("alpha".to_string()));
-        assert!(!dirs[0].default);
+        db.insert_directory("/tmp/a", Some("alpha"), false).unwrap();
+        let directories = db.list_directories().unwrap();
+        assert_eq!(directories.len(), 1);
+        assert_eq!(directories[0].path, "/tmp/a");
+        assert_eq!(directories[0].label, Some("alpha".to_string()));
+        assert!(!directories[0].default);
     }
 
     #[test]
     fn insert_with_default_clears_others() {
         let (mut db, _dir) = open_temp_db();
-        db.insert_dir("/tmp/a", None, true).unwrap();
-        db.insert_dir("/tmp/b", None, true).unwrap();
-        let dirs = db.list_dirs().unwrap();
-        assert!(!dirs[0].default);
-        assert!(dirs[1].default);
+        db.insert_directory("/tmp/a", None, true).unwrap();
+        db.insert_directory("/tmp/b", None, true).unwrap();
+        let directories = db.list_directories().unwrap();
+        assert!(!directories[0].default);
+        assert!(directories[1].default);
     }
 
     #[test]
     fn insert_fails_on_duplicate() {
         let (mut db, _dir) = open_temp_db();
-        db.insert_dir("/tmp/a", None, false).unwrap();
-        assert!(db.insert_dir("/tmp/a", None, false).is_err());
+        db.insert_directory("/tmp/a", None, false).unwrap();
+        assert!(db.insert_directory("/tmp/a", None, false).is_err());
     }
 
     #[test]
     fn remove_deletes_entry() {
         let (mut db, _dir) = open_temp_db();
-        db.insert_dir("/tmp/a", None, false).unwrap();
-        db.insert_dir("/tmp/b", None, false).unwrap();
-        db.remove_dir("/tmp/a").unwrap();
-        let dirs = db.list_dirs().unwrap();
-        assert_eq!(dirs.len(), 1);
-        assert_eq!(dirs[0].path, "/tmp/b");
+        db.insert_directory("/tmp/a", None, false).unwrap();
+        db.insert_directory("/tmp/b", None, false).unwrap();
+        db.remove_directory("/tmp/a").unwrap();
+        let directories = db.list_directories().unwrap();
+        assert_eq!(directories.len(), 1);
+        assert_eq!(directories[0].path, "/tmp/b");
     }
 
     #[test]
     fn remove_fails_when_not_found() {
         let (mut db, _dir) = open_temp_db();
-        let err = db.remove_dir("/tmp/nonexistent").unwrap_err();
+        let err = db.remove_directory("/tmp/nonexistent").unwrap_err();
         assert!(err.to_string().contains("not found"));
     }
 
     #[test]
     fn remove_hints_trailing_slash() {
         let (mut db, _dir) = open_temp_db();
-        db.insert_dir("/tmp/a", None, false).unwrap();
-        let err = db.remove_dir("/tmp/a/").unwrap_err();
+        db.insert_directory("/tmp/a", None, false).unwrap();
+        let err = db.remove_directory("/tmp/a/").unwrap_err();
         assert!(err.to_string().contains("hint:"));
     }
 
     #[test]
     fn set_default_updates_correctly() {
         let (mut db, _dir) = open_temp_db();
-        db.insert_dir("/tmp/a", None, true).unwrap();
-        db.insert_dir("/tmp/b", None, false).unwrap();
+        db.insert_directory("/tmp/a", None, true).unwrap();
+        db.insert_directory("/tmp/b", None, false).unwrap();
         db.set_default("/tmp/b").unwrap();
-        let dirs = db.list_dirs().unwrap();
-        assert!(!dirs[0].default);
-        assert!(dirs[1].default);
+        let directories = db.list_directories().unwrap();
+        assert!(!directories[0].default);
+        assert!(directories[1].default);
     }
 
     #[test]

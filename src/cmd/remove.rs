@@ -8,7 +8,7 @@ pub fn run(
     msg: &Msg,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut db = Db::open(db_path)?;
-    db.remove_dir(path)?;
+    db.remove_directory(path)?;
     println!("{}: {path}", msg.removed);
     Ok(())
 }
@@ -23,7 +23,7 @@ mod tests {
         let db_path = dir.path().join("test.db");
         let mut db = Db::open(Some(db_path.clone())).unwrap();
         for path in paths {
-            db.insert_dir(path, None, false).unwrap();
+            db.insert_directory(path, None, false).unwrap();
         }
         (db_path, dir)
     }
@@ -33,9 +33,9 @@ mod tests {
         let (db_path, _dir) = setup_db_with_entries(&["/tmp/a", "/tmp/b"]);
         run(Some(db_path.clone()), "/tmp/a", &crate::messages::EN).unwrap();
         let db = Db::open(Some(db_path)).unwrap();
-        let dirs = db.list_dirs().unwrap();
-        assert_eq!(dirs.len(), 1);
-        assert_eq!(dirs[0].path, "/tmp/b");
+        let directories = db.list_directories().unwrap();
+        assert_eq!(directories.len(), 1);
+        assert_eq!(directories[0].path, "/tmp/b");
     }
 
     #[test]

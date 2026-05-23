@@ -9,7 +9,7 @@ pub fn run(
     msg: &Msg,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut db = Db::open(db_path)?;
-    db.swap_dirs(path1, path2)?;
+    db.swap_directories(path1, path2)?;
     println!("{}: {path1} ↔ {path2}", msg.swapped);
     Ok(())
 }
@@ -24,7 +24,7 @@ mod tests {
         let db_path = dir.path().join("test.db");
         let mut db = Db::open(Some(db_path.clone())).unwrap();
         for path in paths {
-            db.insert_dir(path, None, false).unwrap();
+            db.insert_directory(path, None, false).unwrap();
         }
         (db_path, dir)
     }
@@ -40,10 +40,10 @@ mod tests {
         )
         .unwrap();
         let db = Db::open(Some(db_path)).unwrap();
-        let dirs = db.list_dirs().unwrap();
-        assert_eq!(dirs[0].path, "/tmp/c");
-        assert_eq!(dirs[1].path, "/tmp/b");
-        assert_eq!(dirs[2].path, "/tmp/a");
+        let directories = db.list_directories().unwrap();
+        assert_eq!(directories[0].path, "/tmp/c");
+        assert_eq!(directories[1].path, "/tmp/b");
+        assert_eq!(directories[2].path, "/tmp/a");
     }
 
     #[test]
