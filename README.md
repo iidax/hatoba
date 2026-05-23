@@ -1,55 +1,92 @@
 # hatoba 🛳️
 
-SSH ログイン時に作業ディレクトリを対話的に選択する Bash/Zsh プラグイン。
+An interactive working directory selector plugin for Bash/Zsh — triggered on terminal startup or SSH login.
 
-## 概要
+## Overview
 
-`hatoba` は SSH ログイン時にディレクトリ選択メニューを表示し、
-矢印キーで作業ディレクトリを選んで `cd` するツールです。
+`hatoba` displays a directory selection menu on SSH login, letting you navigate with arrow keys and `cd` into your chosen working directory.
 
-- ✅ 矢印キー（↑↓）でディレクトリを選択
-- ✅ `config.toml` で選択肢・デフォルトを管理
-- ✅ SSH + インタラクティブ + ログインシェルのみ発動
-- ✅ `scp` / `rsync` / 踏み台経由ではスキップ
+- ✅ Select directories with arrow keys (↑↓)
+- ✅ Manage options and defaults via `config.toml`
+- ✅ Activates only on SSH + interactive + login shell
 
-## インストール
+## Installation
 
 ```bash
 cargo install hatoba
 ```
 
-## セットアップ
+## Setup
 
-### 1. シェルに統合する
+### 1. Integrate with your shell
 
-**.zshrc の場合：**
+**For zsh users**
+
+Run the following command:
+
+```
+echo 'eval "$(hatoba init zsh)"' >> ~/.zshrc
+```
+
+Or add the following directly to `~/.zshrc`:
 
 ```zsh
 eval "$(hatoba init zsh)"
 ```
 
-**.bashrc の場合：**
+After editing, restart your shell or run `source ~/.zshrc`.
+
+**For bash users**
+
+Run the following command:
+
+```bash
+echo 'eval "$(hatoba init bash)"' >> ~/.bashrc
+```
+
+Or add the following directly to `~/.bashrc`:
 
 ```bash
 eval "$(hatoba init bash)"
 ```
 
-追記後、シェルを再起動するか `source ~/.zshrc` を実行してください。
+After editing, restart your shell or run `source ~/.bashrc`.
 
-### 2. ディレクトリを登録する
+### 2. Verify
+
+Confirm that hatoba is available:
 
 ```bash
-# 候補を追加（初回はファイルも自動作成されます）
+# Check version
+hatoba --version
+
+# Check help
+hatoba --help
+```
+
+### 3. Register directories
+
+```bash
+# Add a candidate (the config file is created automatically on first run)
 hatoba add ~/Workspace/myproject --label myproject --default
 
-# 追加の候補
+# Add more candidates
 hatoba add ~/Workspace/other --label other
 
-# 登録内容を確認
+# List registered entries
 hatoba list
 ```
 
-`~/.config/hatoba/config.toml` を直接編集することもできます：
+You can also change the default selection:
+
+```bash
+# Change the default selection
+hatoba default ~/Workspace/foo
+```
+
+### Notes
+
+You can also edit `~/.config/hatoba/config.toml` directly:
 
 ```toml
 # ~/.config/hatoba/config.toml
@@ -63,56 +100,13 @@ path = "~/Workspace/other"
 label = "other"
 ```
 
-## 設定の管理
+---
 
-| コマンド | 説明 |
+## Command Reference
+
+| Command | Description |
 |---|---|
-| `hatoba list` | 登録済みディレクトリを一覧表示 |
-| `hatoba add <path> [--label <name>] [--default]` | ディレクトリを追加 |
-| `hatoba remove <path>` | ディレクトリを削除 |
-| `hatoba default <path>` | デフォルト選択を変更 |
-
-```bash
-# 例
-hatoba add ~/Workspace/foo --label foo --default
-hatoba remove ~/Workspace/old
-hatoba default ~/Workspace/foo
-```
-
-## 発動条件
-
-以下をすべて満たす場合のみメニューが表示されます：
-
-| 条件 | 内容 |
-|---|---|
-| `-t 0` / `-t 1` | インタラクティブな端末セッションである |
-| `login_shell` | ログインシェルである |
-| `$PWD == $HOME` | カレントディレクトリがホームディレクトリである |
-
-## 動作イメージ
-
-```
-hatoba: 作業ディレクトリを選択
-  myproject  ~/Workspace/myproject  (default)
-  other      ~/Workspace/other
-```
-
-## 開発
-
-```bash
-git clone https://github.com/iidax/hatoba
-cd hatoba
-cargo build
-```
-
-```bash
-cargo test          # テスト
-cargo fmt           # フォーマット
-cargo clippy        # 静的解析
-cargo build --release
-cargo install --path .
-```
-
-## ライセンス
-
-MIT
+| `hatoba list` | List registered directories |
+| `hatoba add <path> [--label <name>] [--default]` | Add a directory |
+| `hatoba remove <path>` | Remove a directory |
+| `hatoba default <path>` | Change the default selection |
