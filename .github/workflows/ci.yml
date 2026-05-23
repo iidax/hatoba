@@ -8,6 +8,8 @@ on:
       - 'src/**'
       - 'Cargo.toml'
       - 'Cargo.lock'
+      - 'rust-toolchain.toml'
+      - '.github/workflows/ci.yml'
   pull_request:
     branches:
       - main
@@ -15,6 +17,8 @@ on:
       - 'src/**'
       - 'Cargo.toml'
       - 'Cargo.lock'
+      - 'rust-toolchain.toml'
+      - '.github/workflows/ci.yml'
   workflow_call:
 
 jobs:
@@ -25,6 +29,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      - run: rustup component add rustfmt clippy
       - run: cargo test
       - run: cargo fmt --check
       - run: cargo clippy -- -D warnings
