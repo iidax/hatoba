@@ -13,6 +13,10 @@ An interactive working directory selector plugin for Bash/Zsh — triggered on t
 ## Installation
 
 ```bash
+# From GitHub (latest)
+cargo install --git https://github.com/iidax/hatoba
+
+# From crates.io (Not yet available)
 cargo install hatoba
 ```
 

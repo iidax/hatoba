@@ -14,6 +14,10 @@
 ## インストール
 
 ```bash
+# GitHub最新版からインストール
+cargo install --git https://github.com/iidax/hatoba
+
+# crates.ioからインストール（まだ利用できません）
 cargo install hatoba
 ```
 
