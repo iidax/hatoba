@@ -18,82 +18,59 @@ impl std::fmt::Display for Language {
     }
 }
 
-#[derive(Deserialize, Debug, Default)]
-pub struct Settings {
-    #[serde(default)]
+#[derive(Default)]
+pub struct Config {
     pub language: Language,
 }
 
-#[derive(Deserialize, Debug, Default)]
-pub struct Config {
-    #[serde(default)]
-    pub dirs: Vec<Dir>,
-    #[serde(default)]
-    pub settings: Settings,
+impl Config {
+    pub fn load(path: Option<PathBuf>) -> Self {
+        let file_path = match path {
+            Some(p) => p,
+            None => match Self::path_default() {
+                Ok(p) => p,
+                Err(_) => return Self::default(),
+            },
+        };
+        if !file_path.exists() {
+            return Self::default();
+        }
+        #[derive(Deserialize, Default)]
+        struct ConfigFile {
+            #[serde(default)]
+            settings: SettingsSection,
+        }
+        #[derive(Deserialize, Default)]
+        struct SettingsSection {
+            #[serde(default)]
+            language: Language,
+        }
+        std::fs::read_to_string(&file_path)
+            .ok()
+            .and_then(|c| toml::from_str::<ConfigFile>(&c).ok())
+            .map(|f| Config {
+                language: f.settings.language,
+            })
+            .unwrap_or_default()
+    }
+
+    pub fn path_default() -> Result<PathBuf, Box<dyn std::error::Error>> {
+        let home = dirs::home_dir().ok_or("cannot determine home directory")?;
+        Ok(home.join(".config").join("hatoba").join("config.toml"))
+    }
 }
 
-#[derive(Deserialize, Debug)]
-pub struct Dir {
+#[derive(Debug)]
+pub struct Directory {
     pub path: String,
     pub label: Option<String>,
-    #[serde(default)]
     pub default: bool,
 }
 
-impl Dir {
+impl Directory {
     pub fn display(&self) -> &str {
         self.label.as_deref().unwrap_or(&self.path)
     }
-}
-
-pub fn load(config_path: Option<std::path::PathBuf>) -> Result<Config, Box<dyn std::error::Error>> {
-    let path = match config_path {
-        Some(p) => p,
-        None => config_path_default()?,
-    };
-    if !path.exists() {
-        let dir = path.parent().unwrap().display().to_string();
-        return Err(format!(
-            "config file not found: {}\nhint: mkdir -p {dir} && $EDITOR {}/config.toml",
-            path.display(),
-            dir,
-        )
-        .into());
-    }
-    let content = std::fs::read_to_string(&path)?;
-    let mut config: Config = toml::from_str(&content)?;
-    expand_paths(&mut config)?;
-    Ok(config)
-}
-
-fn expand_paths(config: &mut Config) -> Result<(), Box<dyn std::error::Error>> {
-    for dir in &mut config.dirs {
-        dir.path = shellexpand::full(&dir.path)?.into_owned();
-    }
-    Ok(())
-}
-
-pub fn load_language(config_path: Option<PathBuf>) -> Language {
-    let path = match config_path {
-        Some(p) => p,
-        None => match config_path_default() {
-            Ok(p) => p,
-            Err(_) => return Language::default(),
-        },
-    };
-    if !path.exists() {
-        return Language::default();
-    }
-    std::fs::read_to_string(&path)
-        .ok()
-        .and_then(|c| toml::from_str::<Config>(&c).ok())
-        .map(|c| c.settings.language)
-        .unwrap_or_default()
-}
-
-pub fn config_path_default() -> Result<PathBuf, Box<dyn std::error::Error>> {
-    let home = dirs::home_dir().ok_or("cannot determine home directory")?;
-    Ok(home.join(".config").join("hatoba").join("config.toml"))
 }
 
 #[cfg(test)]
@@ -103,7 +80,7 @@ mod tests {
 
     #[test]
     fn display_returns_label_when_present() {
-        let dir = Dir {
+        let dir = Directory {
             path: "/home/user".to_string(),
             label: Some("myproject".to_string()),
             default: false,
@@ -113,7 +90,7 @@ mod tests {
 
     #[test]
     fn display_returns_path_when_no_label() {
-        let dir = Dir {
+        let dir = Directory {
             path: "/home/user".to_string(),
             label: None,
             default: false,
@@ -122,50 +99,16 @@ mod tests {
     }
 
     #[test]
-    fn load_returns_error_when_file_missing() {
-        let result = load(Some(PathBuf::from("/nonexistent/path/config.toml")));
-        assert!(result.is_err());
-        let msg = result.unwrap_err().to_string();
-        assert!(msg.contains("config file not found"));
-        assert!(msg.contains("hint:"));
+    fn load_returns_default_when_file_missing() {
+        let config = Config::load(Some(PathBuf::from("/nonexistent/path/config.toml")));
+        assert_eq!(config.language, Language::En);
     }
 
     #[test]
-    fn load_parses_valid_toml() {
+    fn load_parses_language() {
         let mut file = tempfile::NamedTempFile::new().unwrap();
-        writeln!(
-            file,
-            r#"
-[[dirs]]
-path = "/tmp/foo"
-label = "foo"
-default = true
-"#
-        )
-        .unwrap();
-
-        let config = load(Some(file.path().to_path_buf())).unwrap();
-        assert_eq!(config.dirs.len(), 1);
-        assert_eq!(config.dirs[0].path, "/tmp/foo");
-        assert_eq!(config.dirs[0].label, Some("foo".to_string()));
-        assert!(config.dirs[0].default);
-    }
-
-    #[test]
-    fn load_expands_home_variable() {
-        let home = dirs::home_dir().unwrap();
-        let mut file = tempfile::NamedTempFile::new().unwrap();
-        writeln!(
-            file,
-            r#"
-[[dirs]]
-path = "$HOME/workspace"
-"#
-        )
-        .unwrap();
-
-        let config = load(Some(file.path().to_path_buf())).unwrap();
-        let expected = format!("{}/workspace", home.display());
-        assert_eq!(config.dirs[0].path, expected);
+        writeln!(file, "[settings]\nlanguage = \"ja\"").unwrap();
+        let config = Config::load(Some(file.path().to_path_buf()));
+        assert_eq!(config.language, Language::Ja);
     }
 }

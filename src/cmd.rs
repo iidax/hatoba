@@ -5,3 +5,4 @@ pub mod lang;
 pub mod list;
 pub mod remove;
 pub mod select;
+pub mod swap;

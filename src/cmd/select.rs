@@ -1,18 +1,19 @@
 use dialoguer::Select;
 
-use crate::config::Config;
+use crate::config::Directory;
 use crate::messages::Msg;
 
-pub fn run(config: &Config, msg: &Msg) -> Result<Option<String>, Box<dyn std::error::Error>> {
-    let dirs = &config.dirs;
-
-    if dirs.len() == 1 {
-        return Ok(Some(dirs[0].path.clone()));
+pub fn run(
+    directories: &[Directory],
+    msg: &Msg,
+) -> Result<Option<String>, Box<dyn std::error::Error>> {
+    if directories.len() == 1 {
+        return Ok(Some(directories[0].path.clone()));
     }
 
-    let default_idx = dirs.iter().position(|dir| dir.default).unwrap_or(0);
+    let default_idx = directories.iter().position(|dir| dir.default).unwrap_or(0);
 
-    let items: Vec<String> = dirs
+    let items: Vec<String> = directories
         .iter()
         .map(|dir| {
             if dir.default {
@@ -33,33 +34,29 @@ pub fn run(config: &Config, msg: &Msg) -> Result<Option<String>, Box<dyn std::er
         .default(default_idx)
         .interact_opt()?;
 
-    Ok(selection.map(|i| dirs[i].path.clone()))
+    Ok(selection.map(|i| directories[i].path.clone()))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::{Config, Dir};
     use crate::messages;
 
-    fn make_config(paths: &[&str]) -> Config {
-        Config {
-            dirs: paths
-                .iter()
-                .map(|p| Dir {
-                    path: p.to_string(),
-                    label: None,
-                    default: false,
-                })
-                .collect(),
-            ..Default::default()
-        }
+    fn make_directories(paths: &[&str]) -> Vec<Directory> {
+        paths
+            .iter()
+            .map(|p| Directory {
+                path: p.to_string(),
+                label: None,
+                default: false,
+            })
+            .collect()
     }
 
     #[test]
     fn run_returns_single_dir_without_interaction() {
-        let config = make_config(&["/tmp/only"]);
-        let result = run(&config, &messages::EN).unwrap();
+        let directories = make_directories(&["/tmp/only"]);
+        let result = run(&directories, &messages::EN).unwrap();
         assert_eq!(result, Some("/tmp/only".to_string()));
     }
 }

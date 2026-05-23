@@ -1,87 +1,82 @@
-use crate::config::config_path_default;
+use dialoguer::Select;
+
+use crate::db::Db;
 use crate::messages::Msg;
 use std::path::PathBuf;
 
 pub fn run(
-    config_path: Option<PathBuf>,
-    path: &str,
+    db_path: Option<PathBuf>,
+    path: Option<&str>,
     msg: &Msg,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let file_path = config_path.map(Ok).unwrap_or_else(config_path_default)?;
-    let content = std::fs::read_to_string(&file_path)?;
-    let mut doc = content.parse::<toml_edit::DocumentMut>()?;
+    let mut db = Db::open(db_path)?;
 
-    let dirs = doc["dirs"]
-        .as_array_of_tables_mut()
-        .ok_or("dirs is not an array of tables")?;
+    let path = match path {
+        Some(p) => p.to_string(),
+        None => {
+            let directories = db.list_directories()?;
+            if directories.is_empty() {
+                return Err(
+                    "no directories registered. Use 'hatoba add <path>' to add one.".into(),
+                );
+            }
+            let items: Vec<String> = directories
+                .iter()
+                .map(|d| {
+                    if d.default {
+                        format!("{}{}", d.display(), msg.default_marker)
+                    } else {
+                        d.display().to_string()
+                    }
+                })
+                .collect();
+            let selection = Select::new()
+                .with_prompt(msg.remove_prompt)
+                .items(&items)
+                .interact_opt()?;
+            match selection {
+                Some(i) => directories[i].path.clone(),
+                None => return Ok(()),
+            }
+        }
+    };
 
-    let idx = dirs
-        .iter()
-        .position(|d| d["path"].as_str() == Some(path))
-        .ok_or_else(|| not_found_error(dirs, path))?;
-
-    dirs.remove(idx);
-
-    std::fs::write(&file_path, doc.to_string())?;
+    db.remove_directory(&path)?;
     println!("{}: {path}", msg.removed);
     Ok(())
-}
-
-fn not_found_error(dirs: &toml_edit::ArrayOfTables, path: &str) -> Box<dyn std::error::Error> {
-    let alt = if path.ends_with('/') {
-        path.trim_end_matches('/').to_string()
-    } else {
-        format!("{path}/")
-    };
-    if dirs
-        .iter()
-        .any(|d| d["path"].as_str() == Some(alt.as_str()))
-    {
-        format!("not found: {path}\nhint: did you mean '{alt}'?").into()
-    } else {
-        format!("not found: {path}").into()
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::io::Write as IoWrite;
+    use crate::db::Db;
 
-    fn make_config_file(content: &str) -> tempfile::NamedTempFile {
-        let mut file = tempfile::NamedTempFile::new().unwrap();
-        writeln!(file, "{content}").unwrap();
-        file
+    fn setup_db_with_entries(paths: &[&str]) -> (PathBuf, tempfile::TempDir) {
+        let dir = tempfile::tempdir().unwrap();
+        let db_path = dir.path().join("test.db");
+        let mut db = Db::open(Some(db_path.clone())).unwrap();
+        for path in paths {
+            db.insert_directory(path, None, false).unwrap();
+        }
+        (db_path, dir)
     }
 
     #[test]
     fn remove_deletes_entry() {
-        let file = make_config_file(
-            r#"
-[[dirs]]
-path = "/tmp/a"
-
-[[dirs]]
-path = "/tmp/b"
-"#,
-        );
-        run(
-            Some(file.path().to_path_buf()),
-            "/tmp/a",
-            &crate::messages::EN,
-        )
-        .unwrap();
-        let config = crate::config::load(Some(file.path().to_path_buf())).unwrap();
-        assert_eq!(config.dirs.len(), 1);
-        assert_eq!(config.dirs[0].path, "/tmp/b");
+        let (db_path, _dir) = setup_db_with_entries(&["/tmp/a", "/tmp/b"]);
+        run(Some(db_path.clone()), Some("/tmp/a"), &crate::messages::EN).unwrap();
+        let db = Db::open(Some(db_path)).unwrap();
+        let directories = db.list_directories().unwrap();
+        assert_eq!(directories.len(), 1);
+        assert_eq!(directories[0].path, "/tmp/b");
     }
 
     #[test]
     fn remove_fails_when_path_not_found() {
-        let file = make_config_file("[[dirs]]\npath = \"/tmp/a\"\n");
+        let (db_path, _dir) = setup_db_with_entries(&["/tmp/a"]);
         let result = run(
-            Some(file.path().to_path_buf()),
-            "/tmp/nonexistent",
+            Some(db_path),
+            Some("/tmp/nonexistent"),
             &crate::messages::EN,
         );
         assert!(result.is_err());
@@ -90,12 +85,8 @@ path = "/tmp/b"
 
     #[test]
     fn remove_hints_trailing_slash_difference() {
-        let file = make_config_file("[[dirs]]\npath = \"/tmp/a\"\n");
-        let result = run(
-            Some(file.path().to_path_buf()),
-            "/tmp/a/",
-            &crate::messages::EN,
-        );
+        let (db_path, _dir) = setup_db_with_entries(&["/tmp/a"]);
+        let result = run(Some(db_path), Some("/tmp/a/"), &crate::messages::EN);
         let msg = result.unwrap_err().to_string();
         assert!(msg.contains("hint:"));
         assert!(msg.contains("/tmp/a"));

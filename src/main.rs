@@ -1,9 +1,10 @@
 mod cmd;
 mod config;
+mod db;
 mod messages;
 
 use clap::{Parser, Subcommand, ValueEnum};
-use config::Language;
+use config::{Config, Directory, Language};
 use std::path::PathBuf;
 use std::process;
 
@@ -17,6 +18,10 @@ struct Cli {
     /// Path to config file (defaults to ~/.config/hatoba/config.toml)
     #[arg(long, global = true)]
     config: Option<PathBuf>,
+
+    /// Path to DB file (defaults to ~/.local/share/hatoba/hatoba.db)
+    #[arg(long, global = true)]
+    db: Option<PathBuf>,
 
     #[command(subcommand)]
     command: Command,
@@ -46,18 +51,25 @@ enum Command {
     },
     /// Change the default selection
     Default {
-        /// Path of the directory to set as default
-        path: String,
+        /// Path of the directory to set as default (interactive if omitted)
+        path: Option<String>,
     },
     /// Remove a directory from the candidate list
     Remove {
-        /// Path of the directory to remove
-        path: String,
+        /// Path of the directory to remove (interactive if omitted)
+        path: Option<String>,
     },
     /// Show or set the display language
     Lang {
         /// Language to set (en / ja). Omit to show the current setting
         language: Option<LangArg>,
+    },
+    /// Swap the list positions of two directories
+    Swap {
+        /// First directory path (interactive if omitted)
+        path1: Option<String>,
+        /// Second directory path (interactive if omitted)
+        path2: Option<String>,
     },
 }
 
@@ -76,8 +88,8 @@ enum LangArg {
 fn main() {
     let cli = Cli::parse();
 
-    let language = config::load_language(cli.config.clone());
-    let msg = messages::get(&language);
+    let config = Config::load(cli.config.clone());
+    let msg = messages::get(&config.language);
 
     match cli.command {
         Command::Init { shell } => {
@@ -87,7 +99,7 @@ fn main() {
             };
             cmd_init(name);
         }
-        Command::Select => match cmd_select(cli.config, msg) {
+        Command::Select => match cmd_select(cli.db, msg) {
             Ok(Some(path)) => println!("{path}"),
             Ok(None) => process::exit(1),
             Err(e) => {
@@ -95,8 +107,8 @@ fn main() {
                 process::exit(1);
             }
         },
-        Command::List => match config::load(cli.config) {
-            Ok(config) => cmd::list::run(&config, msg),
+        Command::List => match load_directories(cli.db) {
+            Ok(directories) => cmd::list::run(&directories, msg),
             Err(e) => {
                 eprintln!("hatoba: {e}");
                 process::exit(1);
@@ -107,19 +119,19 @@ fn main() {
             label,
             default,
         } => {
-            if let Err(e) = cmd::add::run(cli.config, &path, label, default, msg) {
+            if let Err(e) = cmd::add::run(cli.db, &path, label, default, msg) {
                 eprintln!("hatoba: {e}");
                 process::exit(1);
             }
         }
         Command::Default { path } => {
-            if let Err(e) = cmd::default::run(cli.config, &path, msg) {
+            if let Err(e) = cmd::default::run(cli.db, path.as_deref(), msg) {
                 eprintln!("hatoba: {e}");
                 process::exit(1);
             }
         }
         Command::Remove { path } => {
-            if let Err(e) = cmd::remove::run(cli.config, &path, msg) {
+            if let Err(e) = cmd::remove::run(cli.db, path.as_deref(), msg) {
                 eprintln!("hatoba: {e}");
                 process::exit(1);
             }
@@ -129,12 +141,26 @@ fn main() {
                 LangArg::En => Language::En,
                 LangArg::Ja => Language::Ja,
             });
-            if let Err(e) = cmd::lang::run(cli.config, lang) {
+            if let Err(e) = cmd::lang::run(cli.config, lang, msg) {
+                eprintln!("hatoba: {e}");
+                process::exit(1);
+            }
+        }
+        Command::Swap { path1, path2 } => {
+            if let Err(e) = cmd::swap::run(cli.db, path1.as_deref(), path2.as_deref(), msg) {
                 eprintln!("hatoba: {e}");
                 process::exit(1);
             }
         }
     }
+}
+
+fn load_directories(
+    db_path: Option<PathBuf>,
+) -> Result<Vec<Directory>, Box<dyn std::error::Error>> {
+    db::Db::open(db_path)
+        .and_then(|db| db.list_directories())
+        .or_else(|_| Ok(vec![]))
 }
 
 fn cmd_init(shell: &str) {
@@ -146,14 +172,12 @@ fn cmd_init(shell: &str) {
 }
 
 fn cmd_select(
-    config_path: Option<PathBuf>,
+    db_path: Option<PathBuf>,
     msg: &messages::Msg,
 ) -> Result<Option<String>, Box<dyn std::error::Error>> {
-    let config = config::load(config_path)?;
-
-    if config.dirs.is_empty() {
-        return Err("no directories configured in config.toml".into());
+    let directories = load_directories(db_path)?;
+    if directories.is_empty() {
+        return Err("no directories registered. Use 'hatoba add <path>' to add one.".into());
     }
-
-    cmd::select::run(&config, msg)
+    cmd::select::run(&directories, msg)
 }
