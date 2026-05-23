@@ -1,7 +1,10 @@
-use crate::config::{config_path_default, Language};
+use crate::config::{Language, config_path_default};
 use std::path::PathBuf;
 
-pub fn run(config_path: Option<PathBuf>, lang: Option<Language>) -> Result<(), Box<dyn std::error::Error>> {
+pub fn run(
+    config_path: Option<PathBuf>,
+    lang: Option<Language>,
+) -> Result<(), Box<dyn std::error::Error>> {
     let file_path = config_path.map(Ok).unwrap_or_else(config_path_default)?;
 
     match lang {

@@ -2,7 +2,11 @@ use crate::config::config_path_default;
 use crate::messages::Msg;
 use std::path::PathBuf;
 
-pub fn run(config_path: Option<PathBuf>, path: &str, msg: &Msg) -> Result<(), Box<dyn std::error::Error>> {
+pub fn run(
+    config_path: Option<PathBuf>,
+    path: &str,
+    msg: &Msg,
+) -> Result<(), Box<dyn std::error::Error>> {
     let file_path = config_path.map(Ok).unwrap_or_else(config_path_default)?;
     let content = std::fs::read_to_string(&file_path)?;
     let mut doc = content.parse::<toml_edit::DocumentMut>()?;
@@ -64,7 +68,12 @@ default = true
 path = "/tmp/b"
 "#,
         );
-        run(Some(file.path().to_path_buf()), "/tmp/b", &crate::messages::EN).unwrap();
+        run(
+            Some(file.path().to_path_buf()),
+            "/tmp/b",
+            &crate::messages::EN,
+        )
+        .unwrap();
         let config = crate::config::load(Some(file.path().to_path_buf())).unwrap();
         assert!(!config.dirs[0].default);
         assert!(config.dirs[1].default);
@@ -73,7 +82,11 @@ path = "/tmp/b"
     #[test]
     fn default_fails_when_path_not_found() {
         let file = make_config_file("[[dirs]]\npath = \"/tmp/a\"\n");
-        let result = run(Some(file.path().to_path_buf()), "/tmp/nonexistent", &crate::messages::EN);
+        let result = run(
+            Some(file.path().to_path_buf()),
+            "/tmp/nonexistent",
+            &crate::messages::EN,
+        );
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("not found"));
     }
@@ -81,7 +94,11 @@ path = "/tmp/b"
     #[test]
     fn default_hints_trailing_slash_difference() {
         let file = make_config_file("[[dirs]]\npath = \"/tmp/a\"\n");
-        let result = run(Some(file.path().to_path_buf()), "/tmp/a/", &crate::messages::EN);
+        let result = run(
+            Some(file.path().to_path_buf()),
+            "/tmp/a/",
+            &crate::messages::EN,
+        );
         let msg = result.unwrap_err().to_string();
         assert!(msg.contains("hint:"));
         assert!(msg.contains("/tmp/a"));
