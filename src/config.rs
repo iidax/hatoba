@@ -1,10 +1,35 @@
 use serde::Deserialize;
 use std::path::PathBuf;
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone, PartialEq, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum Language {
+    #[default]
+    En,
+    Ja,
+}
+
+impl std::fmt::Display for Language {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Language::En => write!(f, "en"),
+            Language::Ja => write!(f, "ja"),
+        }
+    }
+}
+
+#[derive(Deserialize, Debug, Default)]
+pub struct Settings {
+    #[serde(default)]
+    pub language: Language,
+}
+
+#[derive(Deserialize, Debug, Default)]
 pub struct Config {
     #[serde(default)]
     pub dirs: Vec<Dir>,
+    #[serde(default)]
+    pub settings: Settings,
 }
 
 #[derive(Deserialize, Debug)]
@@ -46,6 +71,24 @@ fn expand_paths(config: &mut Config) -> Result<(), Box<dyn std::error::Error>> {
         dir.path = shellexpand::full(&dir.path)?.into_owned();
     }
     Ok(())
+}
+
+pub fn load_language(config_path: Option<PathBuf>) -> Language {
+    let path = match config_path {
+        Some(p) => p,
+        None => match config_path_default() {
+            Ok(p) => p,
+            Err(_) => return Language::default(),
+        },
+    };
+    if !path.exists() {
+        return Language::default();
+    }
+    std::fs::read_to_string(&path)
+        .ok()
+        .and_then(|c| toml::from_str::<Config>(&c).ok())
+        .map(|c| c.settings.language)
+        .unwrap_or_default()
 }
 
 pub fn config_path_default() -> Result<PathBuf, Box<dyn std::error::Error>> {

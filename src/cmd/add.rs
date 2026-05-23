@@ -1,4 +1,5 @@
 use crate::config::config_path_default;
+use crate::messages::Msg;
 use std::path::PathBuf;
 
 pub fn run(
@@ -6,6 +7,7 @@ pub fn run(
     path: &str,
     label: Option<String>,
     default: bool,
+    msg: &Msg,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let file_path = config_path.map(Ok).unwrap_or_else(config_path_default)?;
     if !file_path.exists() {
@@ -46,7 +48,7 @@ pub fn run(
         .push(table);
 
     std::fs::write(&file_path, doc.to_string())?;
-    println!("Added: {path}");
+    println!("{}: {path}", msg.added);
     Ok(())
 }
 
@@ -66,7 +68,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let file_path = dir.path().join("config.toml");
         assert!(!file_path.exists());
-        run(Some(file_path.clone()), "/tmp/new", None, false).unwrap();
+        run(Some(file_path.clone()), "/tmp/new", None, false, &crate::messages::EN).unwrap();
         assert!(file_path.exists());
         let config = crate::config::load(Some(file_path)).unwrap();
         assert_eq!(config.dirs.len(), 1);
@@ -81,7 +83,7 @@ mod tests {
 path = "/tmp/existing"
 "#,
         );
-        run(Some(file.path().to_path_buf()), "/tmp/new", None, false).unwrap();
+        run(Some(file.path().to_path_buf()), "/tmp/new", None, false, &crate::messages::EN).unwrap();
         let config = crate::config::load(Some(file.path().to_path_buf())).unwrap();
         assert_eq!(config.dirs.len(), 2);
         assert_eq!(config.dirs[1].path, "/tmp/new");
@@ -95,6 +97,7 @@ path = "/tmp/existing"
             "/tmp/b",
             Some("B".to_string()),
             false,
+            &crate::messages::EN,
         )
         .unwrap();
         let config = crate::config::load(Some(file.path().to_path_buf())).unwrap();
@@ -104,7 +107,7 @@ path = "/tmp/existing"
     #[test]
     fn add_with_default_clears_existing_defaults() {
         let file = make_config_file("[[dirs]]\npath = \"/tmp/a\"\ndefault = true\n");
-        run(Some(file.path().to_path_buf()), "/tmp/b", None, true).unwrap();
+        run(Some(file.path().to_path_buf()), "/tmp/b", None, true, &crate::messages::EN).unwrap();
         let config = crate::config::load(Some(file.path().to_path_buf())).unwrap();
         assert!(!config.dirs[0].default);
         assert!(config.dirs[1].default);
@@ -113,7 +116,7 @@ path = "/tmp/existing"
     #[test]
     fn add_fails_on_duplicate_path() {
         let file = make_config_file("[[dirs]]\npath = \"/tmp/a\"\n");
-        let result = run(Some(file.path().to_path_buf()), "/tmp/a", None, false);
+        let result = run(Some(file.path().to_path_buf()), "/tmp/a", None, false, &crate::messages::EN);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("already exists"));
     }

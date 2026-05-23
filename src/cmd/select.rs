@@ -1,8 +1,9 @@
 use dialoguer::Select;
 
 use crate::config::Config;
+use crate::messages::Msg;
 
-pub fn run(config: &Config) -> Result<Option<String>, Box<dyn std::error::Error>> {
+pub fn run(config: &Config, msg: &Msg) -> Result<Option<String>, Box<dyn std::error::Error>> {
     let dirs = &config.dirs;
 
     if dirs.len() == 1 {
@@ -15,7 +16,7 @@ pub fn run(config: &Config) -> Result<Option<String>, Box<dyn std::error::Error>
         .iter()
         .map(|dir| {
             if dir.default {
-                format!("{}  (default)", dir.display())
+                format!("{}{}", dir.display(), msg.default_marker)
             } else {
                 dir.display().to_string()
             }
@@ -27,9 +28,7 @@ pub fn run(config: &Config) -> Result<Option<String>, Box<dyn std::error::Error>
         .unwrap_or_else(|_| "?".to_string());
 
     let selection = Select::new()
-        .with_prompt(format!(
-            "hatoba: 作業ディレクトリを選択  (↑/↓ j/k で移動、Enter/Space で決定、Esc/q でキャンセル → {current})"
-        ))
+        .with_prompt(format!("{} → {current})", msg.select_prompt))
         .items(&items)
         .default(default_idx)
         .interact_opt()?;
@@ -41,6 +40,7 @@ pub fn run(config: &Config) -> Result<Option<String>, Box<dyn std::error::Error>
 mod tests {
     use super::*;
     use crate::config::{Config, Dir};
+    use crate::messages;
 
     fn make_config(paths: &[&str]) -> Config {
         Config {
@@ -52,13 +52,14 @@ mod tests {
                     default: false,
                 })
                 .collect(),
+            ..Default::default()
         }
     }
 
     #[test]
     fn run_returns_single_dir_without_interaction() {
         let config = make_config(&["/tmp/only"]);
-        let result = run(&config).unwrap();
+        let result = run(&config, &messages::EN).unwrap();
         assert_eq!(result, Some("/tmp/only".to_string()));
     }
 }
